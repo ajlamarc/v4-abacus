@@ -16,17 +16,20 @@ fun TradingStateMachine.loadMarketsChanged(mock: AbacusMockData): StateResponse 
     return socket(mock.socketUrl, mock.marketsChannel.channel_data, 0, null)
 }
 
-fun TradingStateMachine.loadMarketsConfigurations(mock: AbacusMockData, deploymentUri: String): StateResponse {
+fun TradingStateMachine.loadMarketsConfigurations(
+        mock: AbacusMockData,
+        deploymentUri: String
+): StateResponse {
     return rest(
-        AbUrl(
-            host = "dydx-v4-shared-resources.vercel.app",
-            path = "/configs/markets.json",
-            scheme = "https://",
-        ),
-        mock.marketsConfigurations.configurations,
-        0,
-        null,
-        deploymentUri,
+            AbUrl(
+                    host = "dydx-v4-shared-resources.vercel.app",
+                    path = "/apps/dydx-v4/configs/markets.json",
+                    scheme = "https://",
+            ),
+            mock.marketsConfigurations.configurations,
+            0,
+            null,
+            deploymentUri,
     )
 }
 
@@ -43,41 +46,41 @@ fun TradingStateMachine.loadv4Accounts(mock: AbacusMockData, endpoint: String): 
 }
 
 fun TradingStateMachine.loadv4SubaccountsWithPositions(
-    mock: AbacusMockData,
-    endpoint: String,
+        mock: AbacusMockData,
+        endpoint: String,
 ): StateResponse {
     return rest(
-        AbUrl.fromString(endpoint),
-        mock.accountsChannel.v4accountsReceivedWithPositions,
-        0,
-        null,
+            AbUrl.fromString(endpoint),
+            mock.accountsChannel.v4accountsReceivedWithPositions,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadv4SubaccountSubscribed(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.accountsChannel.v4_subscribed, 0, null)
 }
 
 fun TradingStateMachine.loadv4SubaccountChanged(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.accountsChannel.v4_channel_data, 0, null)
 }
 
 fun TradingStateMachine.loadv4SubaccountWithOrdersAndFillsChanged(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.accountsChannel.v4_channel_data_with_orders, 0, null)
 }
 
 fun TradingStateMachine.loadv4MarketsSubscribed(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.marketsChannel.v4_subscribed, 0, null)
 }
@@ -87,15 +90,15 @@ fun TradingStateMachine.loadv4MarketsChanged(mock: AbacusMockData, endpoint: AbU
 }
 
 fun TradingStateMachine.loadv4MarketsBatchChanged(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.marketsChannel.v4_channel_batch_data, 0, null)
 }
 
 fun TradingStateMachine.loadv4TradesSubscribed(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.tradesChannel.v4_subscribed, 0, null)
 }
@@ -105,8 +108,8 @@ fun TradingStateMachine.loadv4TradesChanged(mock: AbacusMockData, endpoint: AbUr
 }
 
 fun TradingStateMachine.loadv4TradesBatchChanged(
-    mock: AbacusMockData,
-    endpoint: AbUrl,
+        mock: AbacusMockData,
+        endpoint: AbUrl,
 ): StateResponse {
     return socket(endpoint, mock.tradesChannel.v4_channel_batch_data, 0, null)
 }
@@ -117,14 +120,14 @@ fun TradingStateMachine.loadv4FillsReceived(mock: AbacusMockData, endpoint: Stri
 
 fun TradingStateMachine.loadFillsReceived(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            path = "/v3/fills",
-            scheme = "https://",
-        ),
-        mock.accountsChannel.fillsReceived,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    path = "/v3/fills",
+                    scheme = "https://",
+            ),
+            mock.accountsChannel.fillsReceived,
+            0,
+            null,
     )
 }
 
@@ -134,14 +137,14 @@ fun TradingStateMachine.loadSimpleAccounts(mock: AbacusMockData): StateResponse 
 
 fun TradingStateMachine.loadUser(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "dydx-v4-shared-resources.vercel.app",
-            path = "/v3/users",
-            scheme = "https://",
-        ),
-        mock.user.call,
-        0,
-        null,
+            AbUrl(
+                    host = "dydx-v4-shared-resources.vercel.app",
+                    path = "/v3/users",
+                    scheme = "https://",
+            ),
+            mock.user.call,
+            0,
+            null,
     )
 }
 
@@ -163,128 +166,128 @@ fun TradingStateMachine.loadOrderbookChanged(mock: AbacusMockData): StateRespons
 
 fun TradingStateMachine.loadHistoricalPnlsFirst(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            path = "/v3/historical-pnl",
-            scheme = "https://",
-        ),
-        mock.historicalPNL.firstCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    path = "/v3/historical-pnl",
+                    scheme = "https://",
+            ),
+            mock.historicalPNL.firstCall,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadHistoricalPnlsSecond(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            path = "/v3/historical-pnl",
-            scheme = "https://",
-        ),
-        mock.historicalPNL.secondCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    path = "/v3/historical-pnl",
+                    scheme = "https://",
+            ),
+            mock.historicalPNL.secondCall,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadCandlesAllMarkets(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            port = null,
-            path = "/v3/candles",
-            scheme = "https://",
-            NetworkParam.parse("resolution=1HOUR&limit=25"),
-        ),
-        mock.candles.summaryCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    port = null,
+                    path = "/v3/candles",
+                    scheme = "https://",
+                    NetworkParam.parse("resolution=1HOUR&limit=25"),
+            ),
+            mock.candles.summaryCall,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadCandlesFirst(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            port = null,
-            path = "/v3/candles",
-            scheme = "https://",
-            NetworkParam.parse("market=ETH-USD&resolution=15MIN"),
-        ),
-        mock.candles.firstCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    port = null,
+                    path = "/v3/candles",
+                    scheme = "https://",
+                    NetworkParam.parse("market=ETH-USD&resolution=15MIN"),
+            ),
+            mock.candles.firstCall,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadCandlesSecond(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            port = null,
-            path = "/v3/candles",
-            scheme = "https://",
-            NetworkParam.parse("market=ETH-USD&resolution=15MIN"),
-        ),
-        mock.candles.secondCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    port = null,
+                    path = "/v3/candles",
+                    scheme = "https://",
+                    NetworkParam.parse("market=ETH-USD&resolution=15MIN"),
+            ),
+            mock.candles.secondCall,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadFeeTiers(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "dydx-v4-shared-resources.vercel.app",
-            port = null,
-            path = "/config/staging/fee_tiers.json",
-            scheme = "https://",
-        ),
-        mock.feeTiers.call,
-        0,
-        null,
+            AbUrl(
+                    host = "dydx-v4-shared-resources.vercel.app",
+                    port = null,
+                    path = "/config/staging/fee_tiers.json",
+                    scheme = "https://",
+            ),
+            mock.feeTiers.call,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadFeeDiscounts(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "dydx-v4-shared-resources.vercel.app",
-            port = null,
-            path = "/config/staging/fee_discounts.json",
-            scheme = "https://",
-        ),
-        mock.feeDiscounts.call,
-        0,
-        null,
+            AbUrl(
+                    host = "dydx-v4-shared-resources.vercel.app",
+                    port = null,
+                    path = "/config/staging/fee_discounts.json",
+                    scheme = "https://",
+            ),
+            mock.feeDiscounts.call,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadHistoricalFundings(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            port = null,
-            path = "/v3/historical-funding/ETH-USD",
-            scheme = "https://",
-        ),
-        mock.historicalFundingsMock.call,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    port = null,
+                    path = "/v3/historical-funding/ETH-USD",
+                    scheme = "https://",
+            ),
+            mock.historicalFundingsMock.call,
+            0,
+            null,
     )
 }
 
 fun TradingStateMachine.loadFirstCalculation(mock: AbacusMockData): StateResponse {
     return rest(
-        AbUrl(
-            host = "api.stage.dydx.exchange",
-            port = null,
-            path = "/v3/candles",
-            scheme = "https:/",
-        ),
-        mock.candles.secondCall,
-        0,
-        null,
+            AbUrl(
+                    host = "api.stage.dydx.exchange",
+                    port = null,
+                    path = "/v3/candles",
+                    scheme = "https:/",
+            ),
+            mock.candles.secondCall,
+            0,
+            null,
     )
 }
 

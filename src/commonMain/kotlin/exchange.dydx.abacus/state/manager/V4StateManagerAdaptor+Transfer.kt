@@ -28,7 +28,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 
 internal fun V4StateManagerAdaptor.retrieveCctpChainIds() {
-    val url = "$deploymentUri/configs/cctp.json"
+    val url = "$deploymentUri/apps/dydx-v4/configs/cctp.json"
     get(url) { _, response, _, _ ->
         if (response != null) {
             var chainIds = mutableListOf<CctpChainTokenInfo>()
@@ -48,7 +48,7 @@ internal fun V4StateManagerAdaptor.retrieveCctpChainIds() {
 }
 
 internal fun V4StateManagerAdaptor.retrieveDepositExchanges() {
-    val url = "$deploymentUri/configs/exchanges.json"
+    val url = "$deploymentUri/apps/dydx-v4/configs/exchanges.json"
     get(url) { _, response, _, _ ->
         if (response != null) {
             var exchanges = mutableListOf<ExchangeInfo>()

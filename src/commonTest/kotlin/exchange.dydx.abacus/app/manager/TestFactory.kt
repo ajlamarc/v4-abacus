@@ -30,8 +30,8 @@ class TestFileSystem : FileSystemProtocol {
     var cachedFiles = mutableMapOf<String, String>()
 
     override fun readTextFile(
-        location: FileLocation,
-        path: String,
+            location: FileLocation,
+            path: String,
     ): String? {
         if (path.contains("env.json")) {
             return mock.environments.environments
@@ -39,28 +39,22 @@ class TestFileSystem : FileSystemProtocol {
         when (location) {
             FileLocation.AppBundle -> {
                 when (path) {
-                    "/config/localization/en/app.json",
-                    "/config/localization/zh/app.json",
-                    -> {
+                    "/config/localization/en/app.json", "/config/localization/zh/app.json", -> {
                         return """
                             {
                                 "APP": "app"
                             }
                         """.trimIndent()
                     }
-
                     "/config/localizations_native/en/app.json",
-                    "/config/localizations_native/zh/app.json",
-                    -> {
+                    "/config/localizations_native/zh/app.json", -> {
                         return """
                             {
                                 "TOOLTIP": "tooltip"
                             }
                         """.trimIndent()
                     }
-
-                    "/config/localization/languages.json",
-                    -> {
+                    "/config/localization/languages.json", -> {
                         return """
                             [
                                 {
@@ -74,35 +68,28 @@ class TestFileSystem : FileSystemProtocol {
                             ]
                         """.trimIndent()
                     }
-
                     else -> {
                         return null
                     }
                 }
             }
-
             FileLocation.AppDocs -> {
                 when (path) {
-                    "/config/localization/en/app.json",
-                    "/config/localization/zh/app.json",
-                    -> {
+                    "/config/localization/en/app.json", "/config/localization/zh/app.json", -> {
                         return """
                             {
                                 "APP": "app-doc"
                             }
                         """.trimIndent()
                     }
-
                     "/config/localizations_native/en/app.json",
-                    "/config/localizations_native/zh/app.json",
-                    -> {
+                    "/config/localizations_native/zh/app.json", -> {
                         return """
                             {
                                 "TOOLTIP": "tooltip-doc"
                             }
                         """.trimIndent()
                     }
-
                     else -> {
                         return null
                     }
@@ -125,12 +112,12 @@ class TestRest() : RestProtocol {
 
     init {
         setResponse(
-            "https://api.examples.com/configs/markets.json",
-            mock.marketsConfigurations.configurations,
+                "https://api.examples.com/apps/dydx-v4/configs/markets.json",
+                mock.marketsConfigurations.configurations,
         )
         setResponse(
-            "https://dydx-v4-shared-resources.vercel.app/config/localization/languages.json",
-            """
+                "https://dydx-v4-shared-resources.vercel.app/config/localization/languages.json",
+                """
                 [
                     {
                         "code": "en",
@@ -177,8 +164,8 @@ class TestRest() : RestProtocol {
             """.trimIndent(),
         )
         setResponse(
-            "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
-            """
+                "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
+                """
                 {
                    "data":{
                       "tradingSeasons":[
@@ -200,9 +187,9 @@ class TestRest() : RestProtocol {
     }
 
     override fun get(
-        url: String,
-        headers: IMap<String, String>?,
-        callback: RestCallback,
+            url: String,
+            headers: IMap<String, String>?,
+            callback: RestCallback,
     ) {
         if (url.contains("env.json")) {
             callback(mock.environments.environments, 200, null)
@@ -226,10 +213,10 @@ class TestRest() : RestProtocol {
     }
 
     override fun post(
-        url: String,
-        headers: IMap<String, String>?,
-        body: String?,
-        callback: RestCallback,
+            url: String,
+            headers: IMap<String, String>?,
+            body: String?,
+            callback: RestCallback,
     ) {
         requests.add(url)
 
@@ -248,18 +235,18 @@ class TestRest() : RestProtocol {
     }
 
     override fun put(
-        url: String,
-        headers: IMap<String, String>?,
-        body: String?,
-        callback: RestCallback,
+            url: String,
+            headers: IMap<String, String>?,
+            body: String?,
+            callback: RestCallback,
     ) {
         requests.add(url)
     }
 
     override fun delete(
-        url: String,
-        headers: IMap<String, String>?,
-        callback: RestCallback,
+            url: String,
+            headers: IMap<String, String>?,
+            callback: RestCallback,
     ) {
         requests.add(url)
     }
@@ -277,17 +264,16 @@ class TestWebSocket : WebSocketProtocol {
     var received: ((message: String) -> Unit)? = null
 
     override fun connect(
-        url: String,
-        connected: (result: Boolean) -> Unit,
-        received: (message: String) -> Unit,
+            url: String,
+            connected: (result: Boolean) -> Unit,
+            received: (message: String) -> Unit,
     ) {
         connectUrl = url
         this.connected = connected
         this.received = received
     }
 
-    override fun disconnect() {
-    }
+    override fun disconnect() {}
 
     override fun send(message: String) {
         messages.add(message)
@@ -296,7 +282,7 @@ class TestWebSocket : WebSocketProtocol {
     fun simulateConnected(connected: Boolean) {
         this.connected?.invoke(connected)
         this.received?.invoke(
-            """
+                """
             {"type":"connected","connection_id":"c98ace50-5f67-4ed8-8096-de0c694eeb1d","message_id":0}
             """.trimIndent(),
         )
@@ -325,7 +311,8 @@ class TestChain : DYDXChainTransactionsProtocol {
         }
     """.trimIndent()
 
-    val dummyError = """
+    val dummyError =
+            """
         {
             "error": {
                 "code": 100,
@@ -335,53 +322,47 @@ class TestChain : DYDXChainTransactionsProtocol {
     """.trimIndent()
 
     override fun connectNetwork(
-        paramsInJson: String,
-        callback: (response: String?) -> Unit,
+            paramsInJson: String,
+            callback: (response: String?) -> Unit,
     ) {
         callback(dummySuccess)
     }
 
     override fun get(
-        type: QueryType,
-        paramsInJson: String?,
-        callback: (response: String?) -> Unit
+            type: QueryType,
+            paramsInJson: String?,
+            callback: (response: String?) -> Unit
     ) {
         requests.add(type)
         when (type) {
             QueryType.Height -> {
                 getHeight(callback)
             }
-
             else -> {}
         }
     }
 
     override fun transaction(
-        type: TransactionType,
-        paramsInJson: String?,
-        callback: (response: String?) -> Unit
+            type: TransactionType,
+            paramsInJson: String?,
+            callback: (response: String?) -> Unit
     ) {
         when (type) {
             TransactionType.PlaceOrder -> {
                 placeOrder(paramsInJson!!, callback)
             }
-
             TransactionType.CancelOrder -> {
                 cancelOrder(paramsInJson!!, callback)
             }
-
             TransactionType.Deposit -> {
                 deposit(paramsInJson!!, callback)
             }
-
             TransactionType.Withdraw -> {
                 withdraw(paramsInJson!!, callback)
             }
-
             TransactionType.SignCompliancePayload -> {
                 signCompliancePayload(paramsInJson!!, callback)
             }
-
             else -> {}
         }
     }
@@ -446,15 +427,14 @@ class TestThreading : ThreadingProtocol {
 }
 
 class TestLocalTimer : LocalTimerProtocol {
-    override fun cancel() {
-    }
+    override fun cancel() {}
 }
 
 class TestTimer : TimerProtocol {
     override fun schedule(
-        delay: Double,
-        repeat: Double?,
-        block: () -> Boolean
+            delay: Double,
+            repeat: Double?,
+            block: () -> Boolean
     ): LocalTimerProtocol {
         if (delay == 0.0) {
             block()
@@ -467,8 +447,7 @@ class TestState : StateNotificationProtocol {
     var state: PerpetualState? = null
     var apiState: ApiState? = null
 
-    override fun environmentsChanged() {
-    }
+    override fun environmentsChanged() {}
 
     override fun stateChanged(state: PerpetualState?, changes: StateChanges?) {
         this.state = state
@@ -478,12 +457,9 @@ class TestState : StateNotificationProtocol {
         this.apiState = apiState
     }
 
-    override fun errorsEmitted(errors: IList<ParsingError>) {
-    }
+    override fun errorsEmitted(errors: IList<ParsingError>) {}
 
-    override fun lastOrderChanged(order: SubaccountOrder?) {
-    }
+    override fun lastOrderChanged(order: SubaccountOrder?) {}
 
-    override fun notificationsChanged(notifications: IList<Notification>) {
-    }
+    override fun notificationsChanged(notifications: IList<Notification>) {}
 }

@@ -7,13 +7,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
 class V4StateManagerConfigs(
-    deploymentUrl: String,
-    environment: V4Environment,
+        deploymentUrl: String,
+        environment: V4Environment,
 ) : StateManagerConfigs(deploymentUrl, environment, configs) {
     companion object {
         internal val configs: IMap<String, Any> =
-            Json.parseToJsonElement(
-                """
+                Json.parseToJsonElement(
+                                """
                 {
                    "paths":{
                       "public":{
@@ -49,7 +49,7 @@ class V4StateManagerConfigs(
                          "status":"/v1/status"
                       },
                       "configs":{
-                         "markets":"/configs/markets.json"
+                         "markets":"/apps/dydx-v4/configs/markets.json"
                       },
                       "launchIncentive":{
                          "graphql":"/query/ccar-perpetuals",
@@ -67,7 +67,9 @@ class V4StateManagerConfigs(
                    }
                 }
                 """.trimIndent(),
-            ).jsonObject.toIMap()
+                        )
+                        .jsonObject
+                        .toIMap()
     }
 
     fun candlesChannel(): String? {

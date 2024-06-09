@@ -69,23 +69,23 @@ import kollections.iMutableListOf
 import kollections.iMutableMapOf
 import kollections.toIList
 import kollections.toIMutableMap
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration.Companion.days
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 @Suppress("UNCHECKED_CAST")
 @JsExport
 // @Serializable
 open class TradingStateMachine(
-    private val environment: V4Environment?,
-    private val localizer: LocalizerProtocol?,
-    private val formatter: Formatter?,
-    private val maxSubaccountNumber: Int,
-    private val useParentSubaccount: Boolean,
-    val useSkip: Boolean,
+        private val environment: V4Environment?,
+        private val localizer: LocalizerProtocol?,
+        private val formatter: Formatter?,
+        private val maxSubaccountNumber: Int,
+        private val useParentSubaccount: Boolean,
+        val useSkip: Boolean,
 ) {
     internal val internalState: InternalState = InternalState()
 
@@ -108,7 +108,7 @@ open class TradingStateMachine(
 
     internal var data: Map<String, Any>? = null
 
-    private var dummySubaccountPNLs = mutableMapOf<String, SubaccountHistoricalPNL>();
+    private var dummySubaccountPNLs = mutableMapOf<String, SubaccountHistoricalPNL>()
 
     internal val tokensInfo: Map<String, TokenInfo>
         get() = environment?.tokens!!
@@ -238,25 +238,25 @@ open class TradingStateMachine(
     }
 
     fun socket(
-        url: AbUrl,
-        jsonString: String,
-        subaccountNumber: Int,
-        height: BlockAndTime?,
+            url: AbUrl,
+            jsonString: String,
+            subaccountNumber: Int,
+            height: BlockAndTime?,
     ): StateResponse {
         val errors = iMutableListOf<ParsingError>()
         val json =
-            try {
-                Json.parseToJsonElement(jsonString).jsonObject.toMap()
-            } catch (e: SerializationException) {
-                errors.add(
-                    ParsingError(
-                        ParsingErrorType.ParsingError,
-                        "$jsonString is not a valid JSON object",
-                        e.stackTraceToString(),
-                    ),
-                )
-                null
-            }
+                try {
+                    Json.parseToJsonElement(jsonString).jsonObject.toMap()
+                } catch (e: SerializationException) {
+                    errors.add(
+                            ParsingError(
+                                    ParsingErrorType.ParsingError,
+                                    "$jsonString is not a valid JSON object",
+                                    e.stackTraceToString(),
+                            ),
+                    )
+                    null
+                }
         if (json == null || errors.isNotEmpty()) {
             return StateResponse(state, null, errors)
         }
@@ -270,10 +270,10 @@ open class TradingStateMachine(
 
     @Throws(Exception::class)
     private fun socket(
-        url: AbUrl,
-        payload: Map<String, Any>,
-        subaccountNumber: Int,
-        height: BlockAndTime?,
+            url: AbUrl,
+            payload: Map<String, Any>,
+            subaccountNumber: Int,
+            height: BlockAndTime?,
     ): StateResponse {
         var changes: StateChanges? = null
         val type = parser.asString(payload["type"])
@@ -284,151 +284,133 @@ open class TradingStateMachine(
         try {
             when (type) {
                 "subscribed" -> {
-                    val content = parser.asNativeMap(payload["contents"])
-                        ?: throw ParsingException(
-                            ParsingErrorType.MissingContent,
-                            payload.toString(),
-                        )
+                    val content =
+                            parser.asNativeMap(payload["contents"])
+                                    ?: throw ParsingException(
+                                            ParsingErrorType.MissingContent,
+                                            payload.toString(),
+                                    )
                     when (channel) {
                         "v3_markets", "v4_markets" -> {
                             changes = receivedMarkets(content, subaccountNumber)
                         }
-
                         "v3_accounts", "v4_subaccounts", "v4_parent_subaccounts" -> {
                             changes = receivedSubaccountSubscribed(content, height)
                         }
-
                         "v3_orderbook", "v4_orderbook" -> {
                             val market = parser.asString(payload["id"])
                             changes = receivedOrderbook(market, content, subaccountNumber)
                         }
-
                         "v3_trades", "v4_trades" -> {
                             val market = parser.asString(payload["id"])
                             changes = receivedTrades(market, content)
                         }
-
                         "v4_candles" -> {
                             val channel = parser.asString(payload["id"])
                             val (market, resolution) = splitCandlesChannel(channel)
                             changes = receivedCandles(market, resolution, content)
                         }
-
                         else -> {
                             throw ParsingException(
-                                ParsingErrorType.UnknownChannel,
-                                "$channel subscribed is not known",
+                                    ParsingErrorType.UnknownChannel,
+                                    "$channel subscribed is not known",
                             )
                         }
                     }
                 }
-
                 "unsubscribed" -> {}
-
                 "channel_data" -> {
-                    val content = parser.asNativeMap(payload["contents"])
-                        ?: throw ParsingException(
-                            ParsingErrorType.MissingContent,
-                            payload.toString(),
-                        )
+                    val content =
+                            parser.asNativeMap(payload["contents"])
+                                    ?: throw ParsingException(
+                                            ParsingErrorType.MissingContent,
+                                            payload.toString(),
+                                    )
                     when (channel) {
                         "v3_markets", "v4_markets" -> {
                             changes = receivedMarketsChanges(content, subaccountNumber)
                         }
-
                         "v3_accounts", "v4_subaccounts", "v4_parent_subaccounts" -> {
                             changes = receivedSubaccountsChanges(content, info, height)
                         }
-
                         "v3_orderbook", "v4_orderbook" -> {
                             throw ParsingException(
-                                ParsingErrorType.UnhandledEndpoint,
-                                "channel_data for $channel is not implemented",
+                                    ParsingErrorType.UnhandledEndpoint,
+                                    "channel_data for $channel is not implemented",
                             )
-                            //                                    change = receivedOrderbookChanges(market, it)
+                            //                                    change =
+                            // receivedOrderbookChanges(market, it)
                         }
-
                         "v3_trades", "v4_trades" -> {
                             val market = parser.asString(payload["id"])
                             changes = receivedTradesChanges(market, content)
                         }
-
                         "v4_candles" -> {
                             val channel = parser.asString(payload["id"])
                             val (market, resolution) = splitCandlesChannel(channel)
                             changes = receivedCandlesChanges(market, resolution, content)
                         }
-
                         else -> {
                             throw ParsingException(
-                                ParsingErrorType.UnknownChannel,
-                                "$channel channel data is not known",
+                                    ParsingErrorType.UnknownChannel,
+                                    "$channel channel data is not known",
                             )
                         }
                     }
                 }
-
                 "channel_batch_data" -> {
-                    val content = parser.asList(payload["contents"])
-                        ?: throw ParsingException(
-                            ParsingErrorType.MissingContent,
-                            payload.toString(),
-                        )
+                    val content =
+                            parser.asList(payload["contents"])
+                                    ?: throw ParsingException(
+                                            ParsingErrorType.MissingContent,
+                                            payload.toString(),
+                                    )
                     when (channel) {
                         "v3_markets", "v4_markets" -> {
                             changes = receivedBatchedMarketsChanges(content, subaccountNumber)
                         }
-
                         "v3_trades", "v4_trades" -> {
                             val market = parser.asString(payload["id"])
                             changes = receivedBatchedTradesChanges(market, content)
                         }
-
                         "v4_candles" -> {
                             val channel = parser.asString(payload["id"])
                             val (market, resolution) = splitCandlesChannel(channel)
                             changes = receivedBatchedCandlesChanges(market, resolution, content)
                         }
-
                         "v3_orderbook", "v4_orderbook" -> {
                             val market = parser.asString(payload["id"])
-                            changes = receivedBatchOrderbookChanges(
-                                market,
-                                content,
-                                subaccountNumber,
-                            )
+                            changes =
+                                    receivedBatchOrderbookChanges(
+                                            market,
+                                            content,
+                                            subaccountNumber,
+                                    )
                         }
-
                         "v3_accounts", "v4_subaccounts", "v4_parent_subaccounts" -> {
                             changes = receivedBatchSubaccountsChanges(content, info, height)
                         }
-
                         else -> {
                             throw ParsingException(
-                                ParsingErrorType.UnknownChannel,
-                                "$channel channel batch data is not known",
+                                    ParsingErrorType.UnknownChannel,
+                                    "$channel channel batch data is not known",
                             )
                         }
                     }
                 }
-
                 "connected" -> {}
-
                 "error" -> {
                     throw ParsingException(ParsingErrorType.BackendError, payload.toString())
                 }
-
                 else -> {
                     throw ParsingException(
-                        ParsingErrorType.Unhandled,
-                        "Type [ $type # $channel ] is not handled",
+                            ParsingErrorType.Unhandled,
+                            "Type [ $type # $channel ] is not handled",
                     )
                 }
             }
             var realChanges = changes
-            changes?.let {
-                realChanges = update(it)
-            }
+            changes?.let { realChanges = update(it) }
             return StateResponse(state, realChanges, null, info)
         } catch (e: ParsingException) {
             return StateResponse(state, null, iListOf(e.toParsingError()), info)
@@ -438,15 +420,15 @@ open class TradingStateMachine(
     private fun splitCandlesChannel(channel: String?): Pair<String, String> {
         if (channel == null) {
             throw ParsingException(
-                ParsingErrorType.UnknownChannel,
-                "$channel is not known",
+                    ParsingErrorType.UnknownChannel,
+                    "$channel is not known",
             )
         }
         val marketAndResolution = channel.split("/")
         if (marketAndResolution.size != 2) {
             throw ParsingException(
-                ParsingErrorType.UnknownChannel,
-                "$channel is not known",
+                    ParsingErrorType.UnknownChannel,
+                    "$channel is not known",
             )
         }
         val market = marketAndResolution[0]
@@ -454,16 +436,14 @@ open class TradingStateMachine(
         return Pair(market, resolution)
     }
 
-    /**
-     * function specifically for testing spoofed rest response processing
-     */
+    /** function specifically for testing spoofed rest response processing */
     fun rest(
-        url: AbUrl,
-        payload: String,
-        subaccountNumber: Int,
-        height: Int?,
-        deploymentUri: String? = null,
-        period: String? = null,
+            url: AbUrl,
+            payload: String,
+            subaccountNumber: Int,
+            height: Int?,
+            deploymentUri: String? = null,
+            period: String? = null,
     ): StateResponse {
         /*
         For backward compatibility only
@@ -473,55 +453,63 @@ open class TradingStateMachine(
         when (url.path) {
             "/v3/historical-pnl", "/v4/historical-pnl" -> {
                 val subaccountNumber =
-                    parser.asInt(url.params?.firstOrNull { param -> param.key == "subaccountNumber" }?.value)
-                        ?: 0
+                        parser.asInt(
+                                url.params
+                                        ?.firstOrNull { param -> param.key == "subaccountNumber" }
+                                        ?.value
+                        )
+                                ?: 0
                 changes = historicalPnl(payload, subaccountNumber)
             }
-
             "/v3/users" -> {
                 changes = user(payload)
             }
-
             "/v3/candles" -> {
                 changes = candles(payload)
             }
-
             "/v4/sparklines" -> {
                 changes = sparklines(payload)
             }
-
             "/v3/fills", "/v4/fills" -> {
                 val subaccountNumber =
-                    parser.asInt(url.params?.firstOrNull { param -> param.key == "subaccountNumber" }?.value)
-                        ?: 0
+                        parser.asInt(
+                                url.params
+                                        ?.firstOrNull { param -> param.key == "subaccountNumber" }
+                                        ?.value
+                        )
+                                ?: 0
                 changes = fills(payload, subaccountNumber)
             }
-
             "/v4/transfers" -> {
                 val subaccountNumber =
-                    parser.asInt(url.params?.firstOrNull { param -> param.key == "subaccountNumber" }?.value)
-                        ?: 0
+                        parser.asInt(
+                                url.params
+                                        ?.firstOrNull { param -> param.key == "subaccountNumber" }
+                                        ?.value
+                        )
+                                ?: 0
                 changes = transfers(payload, subaccountNumber)
             }
-
-            "/configs/markets.json" -> {
+            "/apps/dydx-v4/configs/markets.json" -> {
                 if (deploymentUri != null) {
                     changes = configurations(payload, subaccountNumber, deploymentUri)
                 }
             }
-
             else -> {
-                if (url.path.contains("/v3/historical-funding/") || url.path.contains("/v4/historicalFunding/")) {
+                if (url.path.contains("/v3/historical-funding/") ||
+                                url.path.contains("/v4/historicalFunding/")
+                ) {
                     changes = historicalFundings(payload)
                 } else if (url.path.contains("/v3/candles/") || url.path.contains("/v4/candles/")) {
                     changes = candles(payload)
                 } else if (url.path.contains("/v4/addresses/")) {
                     changes = account(payload)
                 } else {
-                    error = ParsingError(
-                        ParsingErrorType.UnhandledEndpoint,
-                        "${url.path} parsing has not be implemented, or is an invalid endpoint",
-                    )
+                    error =
+                            ParsingError(
+                                    ParsingErrorType.UnhandledEndpoint,
+                                    "${url.path} parsing has not be implemented, or is an invalid endpoint",
+                            )
                 }
             }
         }
@@ -533,11 +521,12 @@ open class TradingStateMachine(
         return StateResponse(state, changes, errors)
     }
 
-//    internal fun process(host: String, path: String, payload: String): StateResponse {
-//        val url = URL.parse("$host$path")
-//            ?: throw ParsingException(ParsingErrorType.InvalidUrl, "Couldn't parse $host$path")
-//        return rest(url, payload)
-//    }
+    //    internal fun process(host: String, path: String, payload: String): StateResponse {
+    //        val url = URL.parse("$host$path")
+    //            ?: throw ParsingException(ParsingErrorType.InvalidUrl, "Couldn't parse
+    // $host$path")
+    //        return rest(url, payload)
+    //    }
 
     internal fun resetWallet(accountAddress: String?): StateResponse {
         val wallet = if (accountAddress != null) iMapOf("walletAddress" to accountAddress) else null
@@ -545,26 +534,27 @@ open class TradingStateMachine(
         if (accountAddress == null) {
             this.account = null
         }
-        val changes = StateChanges(
-            iListOf(
-                Changes.wallet,
-                Changes.subaccount,
-                Changes.tradingRewards,
-                Changes.historicalPnl,
-                Changes.fills,
-                Changes.transfers,
-                Changes.fundingPayments,
-            ),
-        )
+        val changes =
+                StateChanges(
+                        iListOf(
+                                Changes.wallet,
+                                Changes.subaccount,
+                                Changes.tradingRewards,
+                                Changes.historicalPnl,
+                                Changes.fills,
+                                Changes.transfers,
+                                Changes.fundingPayments,
+                        ),
+                )
         update(changes)
         walletProcessor.accountAddress = accountAddress
         return StateResponse(state, changes, null)
     }
 
     internal fun configurations(
-        payload: String,
-        subaccountNumber: Int?,
-        deploymentUri: String
+            payload: String,
+            subaccountNumber: Int?,
+            deploymentUri: String
     ): StateChanges {
         val json = parser.decodeJsonObject(payload)
         return if (json != null) {
@@ -578,48 +568,45 @@ open class TradingStateMachine(
         if (changes.changes.contains(Changes.input)) {
             val subaccountNumber = changes.subaccountNumbers?.firstOrNull()
 
-            val subaccount = if (subaccountNumber != null) {
-                parser.asNativeMap(
-                    parser.value(
-                        this.account,
-                        "subaccounts.$subaccountNumber",
-                    ),
-                )
-            } else {
-                null
-            }
-            this.input = inputValidator.validate(
-                this.wallet,
-                this.user,
-                subaccount,
-                parser.asNativeMap(this.marketsSummary?.get("markets")),
-                this.input,
-                this.configs,
-                this.currentBlockAndHeight,
-                this.environment,
-            )
+            val subaccount =
+                    if (subaccountNumber != null) {
+                        parser.asNativeMap(
+                                parser.value(
+                                        this.account,
+                                        "subaccounts.$subaccountNumber",
+                                ),
+                        )
+                    } else {
+                        null
+                    }
+            this.input =
+                    inputValidator.validate(
+                            this.wallet,
+                            this.user,
+                            subaccount,
+                            parser.asNativeMap(this.marketsSummary?.get("markets")),
+                            this.input,
+                            this.configs,
+                            this.currentBlockAndHeight,
+                            this.environment,
+                    )
 
             when (this.input?.get("current")) {
                 "trade" -> {
                     calculateTrade(subaccountNumber)
                 }
-
                 "closePosition" -> {
                     calculateClosePosition(subaccountNumber)
                 }
-
                 "transfer" -> {
                     calculateTransfer(subaccountNumber)
                 }
-
                 "triggerOrders" -> {
                     calculateTriggerOrders(subaccountNumber)
                 }
-
                 "adjustIsolatedMargin" -> {
                     calculateAdjustIsolatedMargin(subaccountNumber)
                 }
-
                 else -> {}
             }
         }
@@ -632,39 +619,42 @@ open class TradingStateMachine(
 
         val realChanges = iMutableListOf<Changes>()
         for (change in changes.changes) {
-            val didChange = when (change) {
-                Changes.assets,
-                Changes.markets,
-                Changes.candles,
-                Changes.sparklines,
-                Changes.historicalFundings,
-                Changes.accountBalances,
-                Changes.subaccount,
-                Changes.tradingRewards,
-                Changes.historicalPnl,
-                Changes.fills,
-                Changes.transfers,
-                Changes.fundingPayments,
-                Changes.trades,
-                Changes.configs,
-                Changes.transferStatuses,
-                Changes.orderbook,
-                Changes.launchIncentive,
-                -> true
+            val didChange =
+                    when (change) {
+                        Changes.assets,
+                        Changes.markets,
+                        Changes.candles,
+                        Changes.sparklines,
+                        Changes.historicalFundings,
+                        Changes.accountBalances,
+                        Changes.subaccount,
+                        Changes.tradingRewards,
+                        Changes.historicalPnl,
+                        Changes.fills,
+                        Changes.transfers,
+                        Changes.fundingPayments,
+                        Changes.trades,
+                        Changes.configs,
+                        Changes.transferStatuses,
+                        Changes.orderbook,
+                        Changes.launchIncentive, -> true
+                        Changes.wallet -> state?.wallet != wallet
+                        Changes.input -> state?.input != input
 
-                Changes.wallet -> state?.wallet != wallet
-                Changes.input -> state?.input != input
-
-                // Restriction is handled separately and shouldn't have gone through here
-                Changes.restriction -> {
-                    Logger.d { "Restriction is handled separately and shouldn't have gone through here" }
-                    false
-                }
-                Changes.compliance -> {
-                    Logger.d { "Compliance is handled separately and shouldn't have gone through here" }
-                    false
-                }
-            }
+                        // Restriction is handled separately and shouldn't have gone through here
+                        Changes.restriction -> {
+                            Logger.d {
+                                "Restriction is handled separately and shouldn't have gone through here"
+                            }
+                            false
+                        }
+                        Changes.compliance -> {
+                            Logger.d {
+                                "Compliance is handled separately and shouldn't have gone through here"
+                            }
+                            false
+                        }
+                    }
             if (didChange) {
                 realChanges.add(change)
             }
@@ -805,9 +795,11 @@ open class TradingStateMachine(
     private fun allSubaccountNumbers(): IList<Int> {
         val subaccountsData = parser.asNativeMap(account?.get("subaccounts"))
         return if (subaccountsData != null) {
-            parser.asNativeMap(subaccountsData)?.keys?.mapNotNull { key ->
-                parser.asInt(key)
-            }?.toIList() ?: iListOf<Int>()
+            parser.asNativeMap(subaccountsData)
+                    ?.keys
+                    ?.mapNotNull { key -> parser.asInt(key) }
+                    ?.toIList()
+                    ?: iListOf<Int>()
         } else {
             iListOf<Int>()
         }
@@ -846,26 +838,28 @@ open class TradingStateMachine(
     private fun recalculateStates(changes: StateChanges) {
         val subaccountNumbers = changes.subaccountNumbers ?: allSubaccountNumbers()
         if (changes.changes.contains(Changes.subaccount)) {
-            val periods = if (this.input != null) {
-                setOf(
-                    CalculationPeriod.current,
-                    CalculationPeriod.post,
-                    CalculationPeriod.settled,
-                )
-            } else {
-                setOf(CalculationPeriod.current)
-            }
+            val periods =
+                    if (this.input != null) {
+                        setOf(
+                                CalculationPeriod.current,
+                                CalculationPeriod.post,
+                                CalculationPeriod.settled,
+                        )
+                    } else {
+                        setOf(CalculationPeriod.current)
+                    }
 
             this.marketsSummary?.let { marketsSummary ->
                 parser.asNativeMap(marketsSummary["markets"])?.let { markets ->
-                    val modifiedAccount = accountCalculator.calculate(
-                        account,
-                        subaccountNumbers,
-                        null,
-                        markets,
-                        priceOverwrite(markets),
-                        periods,
-                    )
+                    val modifiedAccount =
+                            accountCalculator.calculate(
+                                    account,
+                                    subaccountNumbers,
+                                    null,
+                                    markets,
+                                    priceOverwrite(markets),
+                                    periods,
+                            )
                     this.account = modifiedAccount
                 }
             }
@@ -888,29 +882,24 @@ open class TradingStateMachine(
                             val marketId = parser.asString(parser.value(modified, "trade.marketId"))
                             if (subaccountNumber != null && marketId != null) {
                                 val leverage =
-                                    parser.asDouble(
-                                        parser.value(
-                                            this.account,
-                                            "subaccounts.$subaccountNumber.openPositions.$marketId.leverage.postOrder",
-                                        ),
-                                    )
+                                        parser.asDouble(
+                                                parser.value(
+                                                        this.account,
+                                                        "subaccounts.$subaccountNumber.openPositions.$marketId.leverage.postOrder",
+                                                ),
+                                        )
                                 modified.safeSet("trade.size.leverage", leverage)
                             } else {
                                 modified.safeSet("trade.size.leverage", null)
                             }
                         }
-
-                        else -> {
-                        }
+                        else -> {}
                     }
                 }
-
                 "triggerOrders" -> {
                     // TODO: update price diffs based on price.input
                 }
-
-                "closePosition", "transfer" -> {
-                }
+                "closePosition", "transfer" -> {}
             }
             modified.safeSet("receiptLines", calculateReceipt(modified))
             this.input = modified
@@ -927,126 +916,118 @@ open class TradingStateMachine(
                     "MARKET", "STOP_MARKET", "TAKE_PROFIT_MARKET", "TRAILING_STOP" -> {
                         if (isolatedMargin) {
                             listOf(
-                                ReceiptLine.ExpectedPrice.rawValue,
-                                ReceiptLine.LiquidationPrice.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                                    ReceiptLine.ExpectedPrice.rawValue,
+                                    ReceiptLine.LiquidationPrice.rawValue,
+                                    ReceiptLine.PositionMargin.rawValue,
+                                    ReceiptLine.PositionLeverage.rawValue,
+                                    ReceiptLine.Fee.rawValue,
+                                    ReceiptLine.Reward.rawValue,
                             )
                         } else {
                             listOf(
-                                ReceiptLine.BuyingPower.rawValue,
-                                ReceiptLine.MarginUsage.rawValue,
-                                ReceiptLine.ExpectedPrice.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                                    ReceiptLine.BuyingPower.rawValue,
+                                    ReceiptLine.MarginUsage.rawValue,
+                                    ReceiptLine.ExpectedPrice.rawValue,
+                                    ReceiptLine.Fee.rawValue,
+                                    ReceiptLine.Reward.rawValue,
                             )
                         }
                     }
-
                     else -> {
                         if (isolatedMargin) {
                             listOf(
-                                ReceiptLine.LiquidationPrice.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                                    ReceiptLine.LiquidationPrice.rawValue,
+                                    ReceiptLine.PositionMargin.rawValue,
+                                    ReceiptLine.PositionLeverage.rawValue,
+                                    ReceiptLine.Fee.rawValue,
+                                    ReceiptLine.Reward.rawValue,
                             )
                         } else {
                             listOf(
-                                ReceiptLine.BuyingPower.rawValue,
-                                ReceiptLine.MarginUsage.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                                    ReceiptLine.BuyingPower.rawValue,
+                                    ReceiptLine.MarginUsage.rawValue,
+                                    ReceiptLine.Fee.rawValue,
+                                    ReceiptLine.Reward.rawValue,
                             )
                         }
                     }
                 }
             }
-
             "closePosition" -> {
                 listOf(
-                    ReceiptLine.BuyingPower.rawValue,
-                    ReceiptLine.MarginUsage.rawValue,
-                    ReceiptLine.ExpectedPrice.rawValue,
-                    ReceiptLine.Fee.rawValue,
-                    ReceiptLine.Reward.rawValue,
+                        ReceiptLine.BuyingPower.rawValue,
+                        ReceiptLine.MarginUsage.rawValue,
+                        ReceiptLine.ExpectedPrice.rawValue,
+                        ReceiptLine.Fee.rawValue,
+                        ReceiptLine.Reward.rawValue,
                 )
             }
-
             "transfer" -> {
                 val transfer = parser.asNativeMap(input["transfer"]) ?: return null
                 val type = parser.asString(transfer["type"]) ?: return null
                 return when (type) {
                     "DEPOSIT", "WITHDRAWAL" -> {
                         listOf(
-                            ReceiptLine.Equity.rawValue,
-                            ReceiptLine.BuyingPower.rawValue,
-                            ReceiptLine.ExchangeRate.rawValue,
-                            ReceiptLine.ExchangeReceived.rawValue,
-                            ReceiptLine.BridgeFee.rawValue,
-                            ReceiptLine.Fee.rawValue,
-                            ReceiptLine.Slippage.rawValue,
-                            ReceiptLine.TransferRouteEstimatedDuration.rawValue,
+                                ReceiptLine.Equity.rawValue,
+                                ReceiptLine.BuyingPower.rawValue,
+                                ReceiptLine.ExchangeRate.rawValue,
+                                ReceiptLine.ExchangeReceived.rawValue,
+                                ReceiptLine.BridgeFee.rawValue,
+                                ReceiptLine.Fee.rawValue,
+                                ReceiptLine.Slippage.rawValue,
+                                ReceiptLine.TransferRouteEstimatedDuration.rawValue,
                         )
                     }
-
                     "TRANSFER_OUT" -> {
                         listOf(
-                            ReceiptLine.Equity.rawValue,
-                            ReceiptLine.MarginUsage.rawValue,
-                            ReceiptLine.Fee.rawValue,
+                                ReceiptLine.Equity.rawValue,
+                                ReceiptLine.MarginUsage.rawValue,
+                                ReceiptLine.Fee.rawValue,
                         )
                     }
-
                     else -> {
                         listOf()
                     }
                 }
             }
-
             "adjustIsolatedMargin" -> {
-                val adjustIsolatedMargin = parser.asNativeMap(input["adjustIsolatedMargin"]) ?: return null
+                val adjustIsolatedMargin =
+                        parser.asNativeMap(input["adjustIsolatedMargin"]) ?: return null
                 val type = parser.asString(adjustIsolatedMargin["Type"]) ?: return null
 
                 when (type) {
                     "ADD" -> {
                         listOf(
-                            ReceiptLine.CrossFreeCollateral.rawValue,
-                            ReceiptLine.CrossMarginUsage.rawValue,
-                            ReceiptLine.PositionLeverage.rawValue,
-                            ReceiptLine.PositionMargin.rawValue,
-                            ReceiptLine.LiquidationPrice.rawValue,
+                                ReceiptLine.CrossFreeCollateral.rawValue,
+                                ReceiptLine.CrossMarginUsage.rawValue,
+                                ReceiptLine.PositionLeverage.rawValue,
+                                ReceiptLine.PositionMargin.rawValue,
+                                ReceiptLine.LiquidationPrice.rawValue,
                         )
                     }
-
                     "REMOVE" -> {
                         listOf(
-                            ReceiptLine.CrossFreeCollateral.rawValue,
-                            ReceiptLine.CrossMarginUsage.rawValue,
-                            ReceiptLine.PositionLeverage.rawValue,
-                            ReceiptLine.PositionMargin.rawValue,
-                            ReceiptLine.LiquidationPrice.rawValue,
+                                ReceiptLine.CrossFreeCollateral.rawValue,
+                                ReceiptLine.CrossMarginUsage.rawValue,
+                                ReceiptLine.PositionLeverage.rawValue,
+                                ReceiptLine.PositionMargin.rawValue,
+                                ReceiptLine.LiquidationPrice.rawValue,
                         )
                     }
-
                     else -> {
                         listOf()
                     }
                 }
             }
-
             else -> null
         }
     }
 
     private fun update(
-        state: PerpetualState?,
-        changes: StateChanges,
-        tokensInfo: Map<String, TokenInfo>,
-        localizer: LocalizerProtocol?,
+            state: PerpetualState?,
+            changes: StateChanges,
+            tokensInfo: Map<String, TokenInfo>,
+            localizer: LocalizerProtocol?,
     ): PerpetualState {
         var marketsSummary = state?.marketsSummary
         var orderbooks = state?.orderbooks
@@ -1070,43 +1051,51 @@ open class TradingStateMachine(
         if (changes.changes.contains(Changes.markets)) {
             parser.asNativeMap(data?.get("markets"))?.let {
                 marketsSummary =
-                    PerpetualMarketSummary.apply(marketsSummary, parser, it, this.assets, changes)
-            } ?: run {
-                marketsSummary = null
+                        PerpetualMarketSummary.apply(
+                                marketsSummary,
+                                parser,
+                                it,
+                                this.assets,
+                                changes
+                        )
             }
+                    ?: run { marketsSummary = null }
         }
         if (changes.changes.contains(Changes.orderbook)) {
             val markets = changes.markets
-            orderbooks = if (markets != null) {
-                val modified = orderbooks?.toIMutableMap() ?: iMutableMapOf()
-                for (marketId in markets) {
-                    val data =
-                        parser.asNativeMap(
-                            parser.value(
-                                data,
-                                "markets.markets.$marketId.orderbook",
-                            ),
-                        )
-                    val existing = orderbooks?.get(marketId)
-                    val orderbook = MarketOrderbook.create(existing, parser, data)
-                    modified.typedSafeSet(marketId, orderbook)
-                }
-                modified
-            } else {
-                null
-            }
+            orderbooks =
+                    if (markets != null) {
+                        val modified = orderbooks?.toIMutableMap() ?: iMutableMapOf()
+                        for (marketId in markets) {
+                            val data =
+                                    parser.asNativeMap(
+                                            parser.value(
+                                                    data,
+                                                    "markets.markets.$marketId.orderbook",
+                                            ),
+                                    )
+                            val existing = orderbooks?.get(marketId)
+                            val orderbook = MarketOrderbook.create(existing, parser, data)
+                            modified.typedSafeSet(marketId, orderbook)
+                        }
+                        modified
+                    } else {
+                        null
+                    }
         }
         if (changes.changes.contains(Changes.trades)) {
             val markets = changes.markets
             if (markets != null) {
                 val modified = trades?.toIMutableMap() ?: mutableMapOf()
                 for (marketId in markets) {
-                    val data = parser.asList(
-                        parser.value(
-                            data,
-                            "markets.markets.$marketId.trades",
-                        ),
-                    ) as? IList<Map<String, Any>>
+                    val data =
+                            parser.asList(
+                                    parser.value(
+                                            data,
+                                            "markets.markets.$marketId.trades",
+                                    ),
+                            ) as?
+                                    IList<Map<String, Any>>
                     val existing = trades?.get(marketId)
                     val trades = MarketTrade.create(existing, parser, data, localizer)
                     modified.typedSafeSet(marketId, trades)
@@ -1121,12 +1110,14 @@ open class TradingStateMachine(
             if (markets != null) {
                 val modified = historicalFundings?.toIMutableMap() ?: mutableMapOf()
                 for (marketId in markets) {
-                    val data = parser.asList(
-                        parser.value(
-                            data,
-                            "markets.markets.$marketId.historicalFunding",
-                        ),
-                    ) as? IList<Map<String, Any>>
+                    val data =
+                            parser.asList(
+                                    parser.value(
+                                            data,
+                                            "markets.markets.$marketId.historicalFunding",
+                                    ),
+                            ) as?
+                                    IList<Map<String, Any>>
                     val existing = historicalFundings?.get(marketId)
                     val historicalFunding = MarketHistoricalFunding.create(existing, parser, data)
                     modified.typedSafeSet(marketId, historicalFunding)
@@ -1142,7 +1133,9 @@ open class TradingStateMachine(
                 val modified = candles?.toIMutableMap() ?: mutableMapOf()
                 for (marketId in markets) {
                     val data =
-                        parser.asNativeMap(parser.value(data, "markets.markets.$marketId.candles"))
+                            parser.asNativeMap(
+                                    parser.value(data, "markets.markets.$marketId.candles")
+                            )
                     val existing = candles?.get(marketId)
                     val candles = MarketCandles.create(existing, parser, data)
                     modified.typedSafeSet(marketId, candles)
@@ -1162,69 +1155,68 @@ open class TradingStateMachine(
                         }
                     }
                 }
-            } ?: run {
-                assets = null
             }
+                    ?: run { assets = null }
         }
         if (changes.changes.contains(Changes.configs)) {
-            this.configs?.let {
-                configs = Configs.create(configs, parser, it, localizer)
-            } ?: run {
-                configs = null
-            }
+            this.configs?.let { configs = Configs.create(configs, parser, it, localizer) }
+                    ?: run { configs = null }
         }
         if (changes.changes.contains(Changes.wallet)) {
-            this.wallet?.let {
-                wallet = Wallet.create(wallet, parser, it)
-            } ?: run {
-                wallet = null
-            }
+            this.wallet?.let { wallet = Wallet.create(wallet, parser, it) } ?: run { wallet = null }
         }
         val subaccountNumbers = changes.subaccountNumbers ?: allSubaccountNumbers()
         val accountData = this.account
         if (accountData != null) {
             if (changes.changes.contains(Changes.subaccount)) {
-                account = if (account == null) {
-                    Account.create(null, parser, accountData, tokensInfo, localizer)
-                } else {
-                    val subaccounts = account.subaccounts?.toIMutableMap() ?: mutableMapOf()
-                    for (subaccountNumber in subaccountNumbers) {
-                        val subaccount = Subaccount.create(
-                            account.subaccounts?.get("$subaccountNumber"),
-                            parser,
-                            subaccount(subaccountNumber),
-                            localizer,
-                        )
-                        subaccounts.typedSafeSet("$subaccountNumber", subaccount)
-                    }
-                    val groupedSubaccounts = account.groupedSubaccounts?.toIMutableMap() ?: mutableMapOf()
-                    for (subaccountNumber in subaccountNumbers) {
-                        if (subaccountNumber < NUM_PARENT_SUBACCOUNTS) {
-                            val subaccount = Subaccount.create(
-                                account.groupedSubaccounts?.get("$subaccountNumber"),
-                                parser,
-                                groupedSubaccount(subaccountNumber),
-                                localizer,
+                account =
+                        if (account == null) {
+                            Account.create(null, parser, accountData, tokensInfo, localizer)
+                        } else {
+                            val subaccounts = account.subaccounts?.toIMutableMap() ?: mutableMapOf()
+                            for (subaccountNumber in subaccountNumbers) {
+                                val subaccount =
+                                        Subaccount.create(
+                                                account.subaccounts?.get("$subaccountNumber"),
+                                                parser,
+                                                subaccount(subaccountNumber),
+                                                localizer,
+                                        )
+                                subaccounts.typedSafeSet("$subaccountNumber", subaccount)
+                            }
+                            val groupedSubaccounts =
+                                    account.groupedSubaccounts?.toIMutableMap() ?: mutableMapOf()
+                            for (subaccountNumber in subaccountNumbers) {
+                                if (subaccountNumber < NUM_PARENT_SUBACCOUNTS) {
+                                    val subaccount =
+                                            Subaccount.create(
+                                                    account.groupedSubaccounts?.get(
+                                                            "$subaccountNumber"
+                                                    ),
+                                                    parser,
+                                                    groupedSubaccount(subaccountNumber),
+                                                    localizer,
+                                            )
+                                    groupedSubaccounts.typedSafeSet("$subaccountNumber", subaccount)
+                                }
+                            }
+                            Account(
+                                    account.balances,
+                                    account.stakingBalances,
+                                    account.stakingDelegations,
+                                    account.unbondingDelegation,
+                                    account.stakingRewards,
+                                    subaccounts,
+                                    groupedSubaccounts,
+                                    account.tradingRewards,
+                                    account.launchIncentivePoints,
                             )
-                            groupedSubaccounts.typedSafeSet("$subaccountNumber", subaccount)
                         }
-                    }
-                    Account(
-                        account.balances,
-                        account.stakingBalances,
-                        account.stakingDelegations,
-                        account.unbondingDelegation,
-                        account.stakingRewards,
-                        subaccounts,
-                        groupedSubaccounts,
-                        account.tradingRewards,
-                        account.launchIncentivePoints,
-                    )
-                }
             }
-            if (changes.changes.contains(Changes.accountBalances) || changes.changes.contains(
-                    Changes.tradingRewards,
-                )
+            if (changes.changes.contains(Changes.accountBalances) ||
+                            changes.changes.contains(
+                                    Changes.tradingRewards,
+                            )
             ) {
                 account = Account.create(account, parser, accountData, tokensInfo, localizer)
             }
@@ -1238,7 +1230,12 @@ open class TradingStateMachine(
         for (subaccountNumber in subaccountNumbers) {
             val subaccountText = "$subaccountNumber"
             val subaccount =
-                parser.asNativeMap(parser.value(this.account, "groupedSubaccounts.$subaccountNumber")) ?: parser.asNativeMap(parser.value(this.account, "subaccounts.$subaccountNumber"))
+                    parser.asNativeMap(
+                            parser.value(this.account, "groupedSubaccounts.$subaccountNumber")
+                    )
+                            ?: parser.asNativeMap(
+                                    parser.value(this.account, "subaccounts.$subaccountNumber")
+                            )
 
             if (changes.changes.contains(Changes.historicalPnl)) {
                 val now = ServerTime.now()
@@ -1246,8 +1243,9 @@ open class TradingStateMachine(
                 val modifiedHistoricalPnl = historicalPnl?.toIMutableMap() ?: mutableMapOf()
                 var subaccountHistoricalPnl = historicalPnl?.get(subaccountText)
                 val subaccountHistoricalPnlData =
-                    (subaccountHistoricalPnl(subaccountNumber) as? IList<Map<String, Any>>)?.mutable()
-                        ?: mutableListOf()
+                        (subaccountHistoricalPnl(subaccountNumber) as? IList<Map<String, Any>>)
+                                ?.mutable()
+                                ?: mutableListOf()
 
                 if (subaccountHistoricalPnl?.size == 1) {
                     // Check if the PNL was generated from equity
@@ -1256,61 +1254,67 @@ open class TradingStateMachine(
                         subaccountHistoricalPnl = null
                     }
                 }
-                subaccountHistoricalPnl = SubaccountHistoricalPNL.create(
-                    subaccountHistoricalPnl,
-                    parser,
-                    subaccountHistoricalPnlData,
-                    start,
-                )
+                subaccountHistoricalPnl =
+                        SubaccountHistoricalPNL.create(
+                                subaccountHistoricalPnl,
+                                parser,
+                                subaccountHistoricalPnlData,
+                                start,
+                        )
                 modifiedHistoricalPnl.typedSafeSet(subaccountText, subaccountHistoricalPnl)
                 historicalPnl = modifiedHistoricalPnl
             }
             if (changes.changes.contains(Changes.fills)) {
                 val modifiedFills = fills?.toIMutableMap() ?: mutableMapOf()
                 var subaccountFills = fills?.get(subaccountText)
-                subaccountFills = SubaccountFill.create(
-                    subaccountFills,
-                    parser,
-                    subaccountFills(subaccountNumber) as? IList<Map<String, Any>>,
-                    localizer,
-                )
+                subaccountFills =
+                        SubaccountFill.create(
+                                subaccountFills,
+                                parser,
+                                subaccountFills(subaccountNumber) as? IList<Map<String, Any>>,
+                                localizer,
+                        )
                 modifiedFills.typedSafeSet(subaccountText, subaccountFills)
                 fills = modifiedFills
             }
             if (changes.changes.contains(Changes.transfers)) {
                 val modifiedTransfers = transfers?.toIMutableMap() ?: mutableMapOf()
                 var subaccountTransfers = transfers?.get(subaccountText)
-                subaccountTransfers = SubaccountTransfer.create(
-                    subaccountTransfers,
-                    parser,
-                    subaccountTransfers(subaccountNumber) as? IList<Map<String, Any>>,
-                )
+                subaccountTransfers =
+                        SubaccountTransfer.create(
+                                subaccountTransfers,
+                                parser,
+                                subaccountTransfers(subaccountNumber) as? IList<Map<String, Any>>,
+                        )
                 modifiedTransfers.typedSafeSet(subaccountText, subaccountTransfers)
                 transfers = modifiedTransfers
             }
             if (changes.changes.contains(Changes.fundingPayments)) {
                 val modifiedFundingPayments = fundingPayments?.toIMutableMap() ?: mutableMapOf()
                 var subaccountFundingPayments = fundingPayments?.get(subaccountText)
-                subaccountFundingPayments = SubaccountFundingPayment.create(
-                    subaccountFundingPayments,
-                    parser,
-                    subaccountFundingPayments(subaccountNumber) as? IList<Map<String, Any>>,
-                )
+                subaccountFundingPayments =
+                        SubaccountFundingPayment.create(
+                                subaccountFundingPayments,
+                                parser,
+                                subaccountFundingPayments(subaccountNumber) as?
+                                        IList<Map<String, Any>>,
+                        )
                 modifiedFundingPayments.typedSafeSet(subaccountText, subaccountFundingPayments)
                 fundingPayments = modifiedFundingPayments
             }
 
             if (changes.changes.contains(Changes.input)) {
-                this.input = inputValidator.validate(
-                    this.wallet,
-                    this.user,
-                    subaccount,
-                    parser.asNativeMap(this.marketsSummary?.get("markets")),
-                    this.input,
-                    this.configs,
-                    this.currentBlockAndHeight,
-                    this.environment,
-                )
+                this.input =
+                        inputValidator.validate(
+                                this.wallet,
+                                this.user,
+                                subaccount,
+                                parser.asNativeMap(this.marketsSummary?.get("markets")),
+                                this.input,
+                                this.configs,
+                                this.currentBlockAndHeight,
+                                this.environment,
+                        )
                 this.input?.let {
                     input = Input.create(input, parser, it, environment, internalState)
                 }
@@ -1334,30 +1338,29 @@ open class TradingStateMachine(
         if (changes.changes.contains(Changes.launchIncentive)) {
             this.launchIncentive?.let {
                 launchIncentive = LaunchIncentive.create(launchIncentive, parser, it)
-            } ?: run {
-                launchIncentive = null
             }
+                    ?: run { launchIncentive = null }
         }
         return PerpetualState(
-            assets,
-            marketsSummary,
-            orderbooks,
-            candles,
-            trades,
-            historicalFundings,
-            wallet,
-            account,
-            historicalPnl,
-            fills,
-            transfers,
-            fundingPayments,
-            configs,
-            input,
-            subaccountNumbersWithPlaceholders(maxSubaccountNumber()),
-            transferStatuses,
-            restriction,
-            launchIncentive,
-            geo,
+                assets,
+                marketsSummary,
+                orderbooks,
+                candles,
+                trades,
+                historicalFundings,
+                wallet,
+                account,
+                historicalPnl,
+                fills,
+                transfers,
+                fundingPayments,
+                configs,
+                input,
+                subaccountNumbersWithPlaceholders(maxSubaccountNumber()),
+                transferStatuses,
+                restriction,
+                launchIncentive,
+                geo,
         )
     }
 
@@ -1365,25 +1368,28 @@ open class TradingStateMachine(
         this.account?.let {
             this.marketsSummary?.let { marketsSummary ->
                 parser.asNativeMap(marketsSummary["markets"])?.let { markets ->
-                    this.account = accountCalculator.calculate(
-                        it,
-                        subaccountNumbers,
-                        null,
-                        markets,
-                        priceOverwrite(markets),
-                        setOf(period),
-                    )
+                    this.account =
+                            accountCalculator.calculate(
+                                    it,
+                                    subaccountNumbers,
+                                    null,
+                                    markets,
+                                    priceOverwrite(markets),
+                                    setOf(period),
+                            )
                 }
             }
         }
     }
 
     private fun priceOverwrite(markets: Map<String, Any>): Map<String, Any>? {
-        // TODO(@aforaleka): Uncomment when protocol can match collateralization check at limit price
+        // TODO(@aforaleka): Uncomment when protocol can match collateralization check at limit
+        // price
         // if (parser.asString(input?.get("current")) == "trade") {
         //     val trade = parser.asNativeMap(input?.get("trade"))
         //     when (parser.asString(trade?.get("type"))) {
-        //         "LIMIT", "STOP_LIMIT", "TAKE_PROFIT", "TRAILING_STOP", "STOP_MARKET", "TAKE_PROFIT_MARKET" -> {
+        //         "LIMIT", "STOP_LIMIT", "TAKE_PROFIT", "TRAILING_STOP", "STOP_MARKET",
+        // "TAKE_PROFIT_MARKET" -> {
         //             val price = parser.asDouble(parser.value(trade, "summary.price"))
         //             val marketId = parser.asString(trade?.get("marketId"))
         //             if (marketId != null && price != null) {
@@ -1392,7 +1398,8 @@ open class TradingStateMachine(
         //                     parser.asDouble(market?.get("oraclePrice"))
         //                 if (oraclePrice != null) {
         //                     val side = parser.asString(trade?.get("side"))
-        //                     if ((side == "BUY" && price < oraclePrice) || (side == "SELL" && price > oraclePrice)) {
+        //                     if ((side == "BUY" && price < oraclePrice) || (side == "SELL" &&
+        // price > oraclePrice)) {
         //                         return iMapOf(marketId to price)
         //                     }
         //                 }
@@ -1403,8 +1410,7 @@ open class TradingStateMachine(
         return null
     }
 
-    private fun setMarkets(markets: Map<String, Any>?) {
-    }
+    private fun setMarkets(markets: Map<String, Any>?) {}
 
     fun setHistoricalPnlDays(days: Int, subaccountNumber: Int): StateResponse {
         return if (historicalPnlDays != days) {
@@ -1425,19 +1431,21 @@ open class TradingStateMachine(
         val input = input
         return if (input != null) {
             val current = parser.asString(input["current"])
-            val modified = when (current) {
-                "trade", "closePosition" -> clearTradeInput(input)
-                "transfer" -> clearTransferInput(input)
-                else -> null
-            }
+            val modified =
+                    when (current) {
+                        "trade", "closePosition" -> clearTradeInput(input)
+                        "transfer" -> clearTransferInput(input)
+                        else -> null
+                    }
             if (modified != null) {
                 this.input = modified
 
-                val changes = StateChanges(
-                    iListOf(Changes.input, Changes.subaccount),
-                    null,
-                    iListOf(subaccountNumber),
-                )
+                val changes =
+                        StateChanges(
+                                iListOf(Changes.input, Changes.subaccount),
+                                null,
+                                iListOf(subaccountNumber),
+                        )
                 state = update(state, changes, tokensInfo, localizer)
                 StateResponse(state, changes)
             } else {
@@ -1469,11 +1477,12 @@ open class TradingStateMachine(
     fun received(subaccountNumber: Int, height: BlockAndTime?): StateResponse {
         val wallet = wallet
         if (wallet != null) {
-            val (modifiedWallet, updated) = walletProcessor.received(
-                wallet,
-                subaccountNumber,
-                height,
-            )
+            val (modifiedWallet, updated) =
+                    walletProcessor.received(
+                            wallet,
+                            subaccountNumber,
+                            height,
+                    )
             if (updated) {
                 this.wallet = wallet
 

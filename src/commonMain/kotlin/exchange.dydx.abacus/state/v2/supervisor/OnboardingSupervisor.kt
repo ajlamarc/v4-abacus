@@ -112,7 +112,7 @@ internal class OnboardingSupervisor(
     }
 
     private fun retrieveCctpChainIds() {
-        val url = "${helper.deploymentUri}/configs/cctp.json"
+        val url = "${helper.deploymentUri}/apps/dydx-v4/configs/cctp.json"
         helper.get(url) { _, response, _, _ ->
             if (response != null) {
                 val chainIds = mutableListOf<CctpChainTokenInfo>()
@@ -132,7 +132,7 @@ internal class OnboardingSupervisor(
     }
 
     private fun retrieveDepositExchanges() {
-        val url = "${helper.deploymentUri}/configs/exchanges.json"
+        val url = "${helper.deploymentUri}/apps/dydx-v4/configs/exchanges.json"
         helper.get(url) { _, response, _, _ ->
             if (response != null) {
                 val exchanges = mutableListOf<ExchangeInfo>()

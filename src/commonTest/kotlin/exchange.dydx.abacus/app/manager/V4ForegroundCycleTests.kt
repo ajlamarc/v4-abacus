@@ -38,15 +38,16 @@ class V4ForegroundCycleTests : NetworkTests() {
         val ioImplementations = BaseTests.testIOImplementations()
         val localizer = BaseTests.testLocalizer(ioImplementations)
         val uiImplementations = BaseTests.testUIImplementations(localizer)
-        stateManager = AsyncAbacusStateManager(
-            "https://api.examples.com",
-            "DEV",
-            AppConfigs.forApp,
-            ioImplementations,
-            uiImplementations,
-            TestState(),
-            null,
-        )
+        stateManager =
+                AsyncAbacusStateManager(
+                        "https://api.examples.com",
+                        "DEV",
+                        AppConfigs.forApp,
+                        ioImplementations,
+                        uiImplementations,
+                        TestState(),
+                        null,
+                )
         stateManager.environmentId = "dydxprotocol-staging"
         return stateManager
     }
@@ -58,12 +59,16 @@ class V4ForegroundCycleTests : NetworkTests() {
     private fun setStateMachineConnected(stateManager: AsyncAbacusStateManager) {
         setStateMachineReadyToConnect(stateManager)
         (ioImplementations.webSocket as? TestWebSocket)?.simulateConnected(true)
-        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(mock.connectionMock.connectedMessage)
+        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(
+                mock.connectionMock.connectedMessage
+        )
     }
 
     private fun setStateMachineConnectedWithMarkets(stateManager: AsyncAbacusStateManager) {
         setStateMachineConnected(stateManager)
-        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(mock.marketsChannel.v4_subscribed_r1)
+        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(
+                mock.marketsChannel.v4_subscribed_r1
+        )
         stateManager.market = "ETH-USD"
     }
 
@@ -74,30 +79,30 @@ class V4ForegroundCycleTests : NetworkTests() {
         setStateMachineReadyToConnect(stateManager)
 
         assertEquals(
-            "wss://indexer.v4staging.dydx.exchange/v4/ws",
-            testWebSocket?.connectUrl,
-            "WebSocket should be connected to correct url",
+                "wss://indexer.v4staging.dydx.exchange/v4/ws",
+                testWebSocket?.connectUrl,
+                "WebSocket should be connected to correct url",
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -105,7 +110,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getHeight"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
     }
 
@@ -117,12 +122,12 @@ class V4ForegroundCycleTests : NetworkTests() {
         testWebSocket?.simulateConnected(true)
 
         compareExpectedRequests(
-            """
+                """
                 [
                    {"type":"subscribe","channel":"v4_markets","batched":"true"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
     }
 
@@ -151,7 +156,7 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.market = "ETH-USD"
 
         compareExpectedRequests(
-            """
+                """
                 [
                     {"type":"subscribe","channel":"v4_markets","batched":"true"},
                     {"type":"subscribe","channel":"v4_trades","id":"ETH-USD","batched":"true"},
@@ -159,19 +164,19 @@ class V4ForegroundCycleTests : NetworkTests() {
                     {"type":"subscribe","channel":"v4_candles","id":"ETH-USD/1DAY","batched":"true"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/sparklines?timePeriod=ONE_DAY",
@@ -179,11 +184,11 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://indexer.v4staging.dydx.exchange/v4/candles/perpetualMarkets/ETH-USD?resolution=1DAY"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -191,13 +196,13 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getHeight"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
 
         stateManager.market = "BTC-USD"
 
         compareExpectedRequests(
-            """
+                """
                 [
                     {"type":"subscribe","channel":"v4_markets","batched":"true"},
                     {"type":"subscribe","channel":"v4_trades","id":"ETH-USD","batched":"true"},
@@ -211,19 +216,19 @@ class V4ForegroundCycleTests : NetworkTests() {
                     {"type":"subscribe","channel":"v4_candles","id":"BTC-USD/1DAY","batched":"true"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/sparklines?timePeriod=ONE_DAY",
@@ -233,7 +238,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://indexer.v4staging.dydx.exchange/v4/candles/perpetualMarkets/BTC-USD?resolution=1DAY"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
     }
 
@@ -241,8 +246,8 @@ class V4ForegroundCycleTests : NetworkTests() {
     fun historicalFundingShouldCreateSubsequentPaginatedRequests() {
         reset()
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/historicalFunding/ETH-USD",
-            mock.historicalFundingsMock.call,
+                "https://indexer.v4staging.dydx.exchange/v4/historicalFunding/ETH-USD",
+                mock.historicalFundingsMock.call,
         )
 
         setStateMachineReadyToConnect(stateManager)
@@ -255,15 +260,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         /* Only getting historical funding rate once for now */
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/sparklines?timePeriod=ONE_DAY",
@@ -271,7 +276,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://indexer.v4staging.dydx.exchange/v4/candles/perpetualMarkets/ETH-USD?resolution=1DAY"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
     }
 
@@ -319,15 +324,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.setAddresses(null, testAddress)
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=0xsecondaryFakeAddress",
@@ -337,11 +342,11 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/0xsecondaryFakeAddress?n=2"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -354,7 +359,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getNobleBalance"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
     }
 
@@ -364,8 +369,8 @@ class V4ForegroundCycleTests : NetworkTests() {
 
         val testAddress = "cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm"
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
-            mock.accountsChannel.v4accountsReceived,
+                "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
+                mock.accountsChannel.v4accountsReceived,
         )
 
         setStateMachineReadyToConnect(stateManager)
@@ -374,15 +379,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.setAddresses(null, testAddress)
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
@@ -395,21 +400,21 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?n=2"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                     {"type":"subscribe","channel":"v4_markets","batched":"true"},
                     {"type":"subscribe","channel":"v4_subaccounts","id":"cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm/0","batched":"true"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -424,7 +429,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getNobleBalance"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
 
         testWebSocket?.simulateReceived(mock.marketsChannel.v4_subscribed_r1)
@@ -433,8 +438,8 @@ class V4ForegroundCycleTests : NetworkTests() {
         assertEquals(1, stateManager.adaptor?.notifications?.size)
         val notification = stateManager.adaptor?.notifications?.values()?.first()
         assertEquals(
-            "order:b812bea8-29d3-5841-9549-caa072f6f8a8",
-            notification?.id,
+                "order:b812bea8-29d3-5841-9549-caa072f6f8a8",
+                notification?.id,
         )
     }
 
@@ -445,12 +450,12 @@ class V4ForegroundCycleTests : NetworkTests() {
         val testAddress = "cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm"
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
-            mock.accountsChannel.v4accountsReceived,
+                "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
+                mock.accountsChannel.v4accountsReceived,
         )
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/historical-pnl?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm&subaccountNumber=0",
-            mock.historicalPNL.firstCall,
+                "https://indexer.v4staging.dydx.exchange/v4/historical-pnl?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm&subaccountNumber=0",
+                mock.historicalPNL.firstCall,
         )
 
         setStateMachineReadyToConnect(stateManager)
@@ -459,15 +464,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.setAddresses(null, testAddress)
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
@@ -481,7 +486,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?n=2"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
     }
 
@@ -493,8 +498,8 @@ class V4ForegroundCycleTests : NetworkTests() {
         val secondAddress = "cosmos1d67qczf2dz0n30qau2wg893fhpdeekmfu44p4f"
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
-            mock.accountsChannel.v4accountsReceived,
+                "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
+                mock.accountsChannel.v4accountsReceived,
         )
 
         setStateMachineReadyToConnect(stateManager)
@@ -507,15 +512,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.setAddresses(null, secondAddress)
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
@@ -533,22 +538,22 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1d67qczf2dz0n30qau2wg893fhpdeekmfu44p4f?n=2"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                     {"type":"subscribe","channel":"v4_markets","batched":"true"},
                     {"type":"subscribe","channel":"v4_subaccounts","id":"$testAddress/0","batched":"true"},
                     {"type":"unsubscribe","channel":"v4_subaccounts","id":"$testAddress/0"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -568,7 +573,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getNobleBalance"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
     }
 
@@ -579,8 +584,8 @@ class V4ForegroundCycleTests : NetworkTests() {
         val testAddress = "cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm"
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
-            mock.accountsChannel.v4accountsReceived,
+                "https://indexer.v4staging.dydx.exchange/v4/addresses/$testAddress",
+                mock.accountsChannel.v4accountsReceived,
         )
 
         setStateMachineReadyToConnect(stateManager)
@@ -592,15 +597,15 @@ class V4ForegroundCycleTests : NetworkTests() {
         stateManager.setAddresses(null, null)
 
         compareExpectedRequests(
-            """
+                """
                 [
-                   "https://api.examples.com/configs/documentation.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
                    "https://indexer.v4staging.dydx.exchange/v4/time",
-                   "https://api.examples.com/configs/markets.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/markets.json",
                    "https://api.dydx.exchange/v4/geo",
                    "https://testnet.v2.api.squidrouter.com/v2/sdk-info",
-                    "https://api.examples.com/configs/cctp.json",
-                   "https://api.examples.com/configs/exchanges.json",
+                    "https://api.examples.com/apps/dydx-v4/configs/cctp.json",
+                   "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
                    "https://indexer.v4staging.dydx.exchange/v4/height",
                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
@@ -613,22 +618,22 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?n=2"
                 ]
             """.trimIndent(),
-            testRest?.requests,
+                testRest?.requests,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                     {"type":"subscribe","channel":"v4_markets","batched":"true"},
                     {"type":"subscribe","channel":"v4_subaccounts","id":"$testAddress/0","batched":"true"},
                     {"type":"unsubscribe","channel":"v4_subaccounts","id":"$testAddress/0"}
                 ]
             """.trimIndent(),
-            testWebSocket?.messages,
+                testWebSocket?.messages,
         )
 
         compareExpectedRequests(
-            """
+                """
                 [
                    "getEquityTiers",
                    "getFeeTiers",
@@ -643,7 +648,7 @@ class V4ForegroundCycleTests : NetworkTests() {
                    "getNobleBalance"
                 ]
             """.trimIndent(),
-            testChain?.requests?.map { it.rawValue },
+                testChain?.requests?.map { it.rawValue },
         )
     }
 

@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 
 @JsExport
 class AppConfigs(
-    var subscribeToCandles: Boolean,
-    var loadRemote: Boolean = true,
-    var enableLogger: Boolean = false,
+        var subscribeToCandles: Boolean,
+        var loadRemote: Boolean = true,
+        var enableLogger: Boolean = false,
 ) {
     enum class SquidVersion {
         V2,
@@ -24,7 +24,8 @@ class AppConfigs(
 
     companion object {
         val forApp = AppConfigs(subscribeToCandles = true, loadRemote = true)
-        val forAppDebug = AppConfigs(subscribeToCandles = true, loadRemote = false, enableLogger = true)
+        val forAppDebug =
+                AppConfigs(subscribeToCandles = true, loadRemote = false, enableLogger = true)
         val forWeb = AppConfigs(subscribeToCandles = false, loadRemote = true)
     }
 }
@@ -39,7 +40,7 @@ enum class HistoricalPnlPeriod(val rawValue: String) {
 
     companion object {
         operator fun invoke(rawValue: String) =
-            HistoricalPnlPeriod.values().firstOrNull { it.rawValue == rawValue }
+                HistoricalPnlPeriod.values().firstOrNull { it.rawValue == rawValue }
     }
 }
 
@@ -52,7 +53,7 @@ enum class HistoricalTradingRewardsPeriod(val rawValue: String) {
 
     companion object {
         operator fun invoke(rawValue: String) =
-            HistoricalTradingRewardsPeriod.values().firstOrNull { it.rawValue == rawValue }
+                HistoricalTradingRewardsPeriod.values().firstOrNull { it.rawValue == rawValue }
     }
 }
 
@@ -69,7 +70,7 @@ enum class CandlesPeriod(val rawValue: String) {
 
     companion object {
         operator fun invoke(rawValue: String) =
-            CandlesPeriod.values().firstOrNull { it.rawValue == rawValue }
+                CandlesPeriod.values().firstOrNull { it.rawValue == rawValue }
     }
 }
 
@@ -83,7 +84,7 @@ enum class OrderbookGrouping(val rawValue: Int) {
 
     companion object {
         operator fun invoke(rawValue: Int) =
-            OrderbookGrouping.values().firstOrNull { it.rawValue == rawValue }
+                OrderbookGrouping.values().firstOrNull { it.rawValue == rawValue }
     }
 }
 
@@ -97,11 +98,11 @@ enum class ApiData {
 enum class ConfigFile(val rawValue: String) {
     DOCUMENTATION("DOCUMENTATION") {
         override val path: String
-            get() = "/configs/documentation.json"
+            get() = "/apps/dydx-v4/configs/documentation.json"
     },
     ENV("ENV") {
         override val path: String
-            get() = "/configs/v1/env.json"
+            get() = "/apps/dydx-v4/configs/v1/env.json"
     };
 
     abstract val path: String

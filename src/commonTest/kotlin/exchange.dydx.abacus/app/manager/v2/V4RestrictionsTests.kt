@@ -43,15 +43,16 @@ class V4RestrictionsTests : NetworkTests() {
         val ioImplementations = BaseTests.testIOImplementations()
         val localizer = BaseTests.testLocalizer(ioImplementations)
         val uiImplementations = BaseTests.testUIImplementations(localizer)
-        stateManager = AsyncAbacusStateManagerV2(
-            "https://api.examples.com",
-            "DEV",
-            AppConfigsV2.forApp,
-            ioImplementations,
-            uiImplementations,
-            TestState(),
-            null,
-        )
+        stateManager =
+                AsyncAbacusStateManagerV2(
+                        "https://api.examples.com",
+                        "DEV",
+                        AppConfigsV2.forApp,
+                        ioImplementations,
+                        uiImplementations,
+                        TestState(),
+                        null,
+                )
         stateManager.environmentId = "dydxprotocol-staging"
         return stateManager
     }
@@ -63,16 +64,22 @@ class V4RestrictionsTests : NetworkTests() {
     private fun setStateMachineConnected(stateManager: AsyncAbacusStateManagerV2) {
         setStateMachineReadyToConnect(stateManager)
         (ioImplementations.webSocket as? TestWebSocket)?.simulateConnected(true)
-        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(mock.connectionMock.connectedMessage)
+        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(
+                mock.connectionMock.connectedMessage
+        )
     }
 
     private fun setStateMachineConnectedWithMarkets(stateManager: AsyncAbacusStateManagerV2) {
         setStateMachineConnected(stateManager)
-        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(mock.marketsChannel.v4_subscribed_r1)
+        (ioImplementations.webSocket as? TestWebSocket)?.simulateReceived(
+                mock.marketsChannel.v4_subscribed_r1
+        )
         stateManager.market = "ETH-USD"
     }
 
-    private fun setStateMachineConnectedWithMarketsAndSubaccounts(stateManager: AsyncAbacusStateManagerV2) {
+    private fun setStateMachineConnectedWithMarketsAndSubaccounts(
+            stateManager: AsyncAbacusStateManagerV2
+    ) {
         setStateMachineConnectedWithMarkets(stateManager)
         stateManager.setAddresses(null, testCosmoAddress)
     }
@@ -82,17 +89,17 @@ class V4RestrictionsTests : NetworkTests() {
         reset()
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/height",
-            "403",
+                "https://indexer.v4staging.dydx.exchange/v4/height",
+                "403",
         )
 
         setStateMachineReadyToConnect(stateManager)
         testWebSocket?.simulateConnected(true)
 
         assertEquals(
-            Restriction.GEO_RESTRICTED,
-            stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
-            "Expected geo restriction",
+                Restriction.GEO_RESTRICTED,
+                stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
+                "Expected geo restriction",
         )
     }
 
@@ -100,7 +107,8 @@ class V4RestrictionsTests : NetworkTests() {
     fun testGeoEndpointHandling() {
         reset()
 
-        testChain!!.signCompliancePayload = """
+        testChain!!.signCompliancePayload =
+                """
         {
             "signedMessage": "1",
             "publicKey": "1",
@@ -109,8 +117,8 @@ class V4RestrictionsTests : NetworkTests() {
         """.trimIndent()
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/compliance/geoblock",
-            """
+                "https://indexer.v4staging.dydx.exchange/v4/compliance/geoblock",
+                """
                 {
                     "status": "CLOSE_ONLY",
                     "reason": null,
@@ -119,8 +127,8 @@ class V4RestrictionsTests : NetworkTests() {
             """.trimIndent(),
         )
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/compliance/screen/$testCosmoAddress",
-            """
+                "https://indexer.v4staging.dydx.exchange/v4/compliance/screen/$testCosmoAddress",
+                """
                 {
                     "status": "CLOSE_ONLY",
                     "reason": null,
@@ -133,8 +141,8 @@ class V4RestrictionsTests : NetworkTests() {
         stateManager.setAddresses(null, testCosmoAddress)
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/compliance/screen/$testCosmoAddress",
-            """
+                "https://indexer.v4staging.dydx.exchange/v4/compliance/screen/$testCosmoAddress",
+                """
                 {
                     "status": "CLOSE_ONLY",
                     "reason": null,
@@ -144,8 +152,8 @@ class V4RestrictionsTests : NetworkTests() {
         )
 
         testRest?.setResponse(
-            "https://indexer.v4staging.dydx.exchange/v4/compliance/geoblock",
-            """
+                "https://indexer.v4staging.dydx.exchange/v4/compliance/geoblock",
+                """
                 {
                     "status": "CLOSE_ONLY",
                     "reason": null,
@@ -159,86 +167,93 @@ class V4RestrictionsTests : NetworkTests() {
         }
 
         assertEquals(
-            ComplianceStatus.CLOSE_ONLY,
-            stateManager.adaptor?.stateMachine?.state?.compliance?.status,
-            "Expected CLOSE_ONLY restriction",
+                ComplianceStatus.CLOSE_ONLY,
+                stateManager.adaptor?.stateMachine?.state?.compliance?.status,
+                "Expected CLOSE_ONLY restriction",
         )
 
         assertEquals(
-            "2024-05-14T20:40:00.415Z",
-            stateManager.adaptor?.stateMachine?.state?.compliance?.updatedAt,
-            "Expected different updatedAt",
+                "2024-05-14T20:40:00.415Z",
+                stateManager.adaptor?.stateMachine?.state?.compliance?.updatedAt,
+                "Expected different updatedAt",
         )
 
         // expires at is 7 days in advance
         assertEquals(
-            "2024-05-21T20:40:00.415Z",
-            stateManager.adaptor?.stateMachine?.state?.compliance?.expiresAt,
-            "Expected different expires at",
+                "2024-05-21T20:40:00.415Z",
+                stateManager.adaptor?.stateMachine?.state?.compliance?.expiresAt,
+                "Expected different expires at",
         )
     }
 
-//    @Test
-//    fun whenUserRestricted() {
-//        reset()
-//        val testAddress = "cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm"
-//
-//        testRest?.setResponse(
-//            "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
-//            """
-//                {
-//                    "restricted": true
-//                }
-//            """.trimIndent()
-//        )
-//
-//        setStateMachineReadyToConnect(stateManager)
-//        setStateMachineConnected(stateManager)
-//
-//        stateManager.setAddresses(null, testAddress)
-//        assertEquals(
-//            Restriction.USER_RESTRICTED,
-//            stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
-//            "Expected user restriction"
-//        )
-//
-//
-//        compareExpectedRequests(
-//            """
-//                [
-//                    "https://api.examples.com/configs/documentation.json",
-//                    "https://indexer.v4staging.dydx.exchange/v4/time",
-//                    "https://indexer.v4staging.dydx.exchange/v4/sparklines?timePeriod=ONE_DAY",
-//                    "https://indexer.v4staging.dydx.exchange/v4/height",
-//                    "https://api.examples.com/configs/markets.json",
-//                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
-//                    "https://squid-api-git-main-cosmos-testnet-0xsquid.vercel.app/v1/chains",
-//                    "https://squid-api-git-main-cosmos-testnet-0xsquid.vercel.app/v1/tokens",
-//                    "https://api.examples.com/configs/exchanges.json",
-//                    "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
-//                    "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?n=2",
-//                    "https://indexer.v4staging.dydx.exchange/v4/addresses/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
-//                    "https://indexer.v4staging.dydx.exchange/v4/historicalTradingRewardAggregations/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?period=WEEKLY"
-//                ]
-//            """.trimIndent(),
-//            testRest?.requests
-//        )
-//
-//        testRest?.setResponse(
-//            "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
-//            """
-//                {
-//                    "restricted": true
-//                }
-//            """.trimIndent()
-//        )
-//        stateManager.screen("cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm") { restriction ->
-//
-//            assertEquals(
-//                Restriction.USER_RESTRICTED,
-//                stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
-//                "Expected user restriction"
-//            )
-//        }
-//    }
+    //    @Test
+    //    fun whenUserRestricted() {
+    //        reset()
+    //        val testAddress = "cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm"
+    //
+    //        testRest?.setResponse(
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
+    //            """
+    //                {
+    //                    "restricted": true
+    //                }
+    //            """.trimIndent()
+    //        )
+    //
+    //        setStateMachineReadyToConnect(stateManager)
+    //        setStateMachineConnected(stateManager)
+    //
+    //        stateManager.setAddresses(null, testAddress)
+    //        assertEquals(
+    //            Restriction.USER_RESTRICTED,
+    //            stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
+    //            "Expected user restriction"
+    //        )
+    //
+    //
+    //        compareExpectedRequests(
+    //            """
+    //                [
+    //                    "https://api.examples.com/apps/dydx-v4/configs/documentation.json",
+    //                    "https://indexer.v4staging.dydx.exchange/v4/time",
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/sparklines?timePeriod=ONE_DAY",
+    //                    "https://indexer.v4staging.dydx.exchange/v4/height",
+    //                    "https://api.examples.com/apps/dydx-v4/configs/markets.json",
+    //                    "https://dydx.exchange/v4-launch-incentive/query/ccar-perpetuals",
+    //                    "https://squid-api-git-main-cosmos-testnet-0xsquid.vercel.app/v1/chains",
+    //                    "https://squid-api-git-main-cosmos-testnet-0xsquid.vercel.app/v1/tokens",
+    //                    "https://api.examples.com/apps/dydx-v4/configs/exchanges.json",
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
+    //
+    // "https://dydx.exchange/v4-launch-incentive/query/api/dydx/points/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?n=2",
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/addresses/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/historicalTradingRewardAggregations/cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm?period=WEEKLY"
+    //                ]
+    //            """.trimIndent(),
+    //            testRest?.requests
+    //        )
+    //
+    //        testRest?.setResponse(
+    //
+    // "https://indexer.v4staging.dydx.exchange/v4/screen?address=cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm",
+    //            """
+    //                {
+    //                    "restricted": true
+    //                }
+    //            """.trimIndent()
+    //        )
+    //        stateManager.screen("cosmos1fq8q55896ljfjj7v3x0qd0z3sr78wmes940uhm") { restriction ->
+    //
+    //            assertEquals(
+    //                Restriction.USER_RESTRICTED,
+    //                stateManager.adaptor?.stateMachine?.state?.restriction?.restriction,
+    //                "Expected user restriction"
+    //            )
+    //        }
+    //    }
 }
