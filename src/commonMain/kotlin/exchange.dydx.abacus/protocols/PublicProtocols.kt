@@ -156,7 +156,8 @@ enum class TransactionType(val rawValue: String) {
     SendNobleIBC("sendNobleIBC"),
     WithdrawToNobleIBC("withdrawToNobleIBC"),
     CctpWithdraw("cctpWithdraw"),
-    SignCompliancePayload("signCompliancePayload");
+    SignCompliancePayload("signCompliancePayload"),
+    SetSelectedGasDenom("setSelectedGasDenom");
 
     companion object {
         operator fun invoke(rawValue: String) =
@@ -217,6 +218,7 @@ enum class AnalyticsEvent(val rawValue: String) {
     TradePlaceOrderStatusPending("TradePlaceOrderStatusPending"),
     TradePlaceOrderStatusUntriggered("TradePlaceOrderStatusUntriggered"),
     TradePlaceOrderStatusPartiallyFilled("TradePlaceOrderStatusPartiallyFilled"),
+    TradePlaceOrderStatusPartiallyCanceled("TradePlaceOrderStatusPartiallyCanceled"),
 
     // Trigger Order
     TriggerOrderClick("TriggerOrderClick"),

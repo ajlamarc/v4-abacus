@@ -7,14 +7,14 @@ import exchange.dydx.abacus.tests.payloads.SkipChainsMock
 import exchange.dydx.abacus.tests.payloads.SkipRouteMock
 import exchange.dydx.abacus.tests.payloads.SkipTokensMock
 import exchange.dydx.abacus.utils.Parser
+import exchange.dydx.abacus.utils.toJsonObject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
-internal fun templateToJson(template: String): Map<String, Any> {
+internal fun templateToMap(template: String): Map<String, Any> {
     return Json.parseToJsonElement(template.trimIndent()).jsonObject.toMap()
 }
 
@@ -197,7 +197,7 @@ class SkipProcessorTests {
 
     @Test
     fun testReceivedChains() {
-        val payload = templateToJson(
+        val payload = templateToMap(
             skipChainsMock.payload,
         )
         val modified = skipProcessor.receivedChains(
@@ -221,6 +221,12 @@ class SkipProcessorTests {
         )
         val expectedModified = mapOf(
             "transfer" to mapOf(
+                "depositOptions" to mapOf(
+                    "chains" to expectedChains,
+                ),
+                "withdrawalOptions" to mapOf(
+                    "chains" to expectedChains,
+                ),
                 "chain" to "1",
             ),
         )
@@ -233,7 +239,7 @@ class SkipProcessorTests {
 
     @Test
     fun testReceivedTokens() {
-        val payload = templateToJson(skipTokensMock.payload)
+        val payload = templateToMap(skipTokensMock.payload)
         skipProcessor.skipTokens = null
         skipProcessor.chains = listOf(
             mapOf(
@@ -250,11 +256,6 @@ class SkipProcessorTests {
         val modified = skipProcessor.receivedTokens(
             existing = mapOf(),
             payload = payload,
-        )
-        val expectedModified = mapOf(
-            "transfer" to mapOf(
-                "token" to "0x97e6E0a40a3D02F12d1cEC30ebfbAE04e37C119E",
-            ),
         )
         val expectedTokens = listOf(
             SelectionOption(
@@ -274,6 +275,17 @@ class SkipProcessorTests {
                 string = "Umee native token",
                 type = "0x923e030f951A2401426a3407a9bcc7EB715d9a0b",
                 iconUrl = "https://raw.githubusercontent.com/axelarnetwork/axelar-configs/main/images/tokens/umee.svg",
+            ),
+        )
+        val expectedModified = mapOf(
+            "transfer" to mapOf(
+                "token" to "0x97e6E0a40a3D02F12d1cEC30ebfbAE04e37C119E",
+                "depositOptions" to mapOf(
+                    "tokens" to expectedTokens,
+                ),
+                "withdrawalOptions" to mapOf(
+                    "tokens" to expectedTokens,
+                ),
             ),
         )
         val expectedTokenResources = mapOf(
@@ -308,7 +320,7 @@ class SkipProcessorTests {
 
     @Test
     fun testReceivedRoute() {
-        val payload = templateToJson(skipRouteMock.payload)
+        val payload = templateToMap(skipRouteMock.payload)
         val result = skipProcessor.receivedRoute(
             existing = mapOf(),
             payload = payload,
@@ -318,9 +330,9 @@ class SkipProcessorTests {
             "transfer" to mapOf(
                 "route" to mapOf(
 //                    TODO: set up text properly so we get a decimals value
-                    "toAmount" to "11640000",
                     "toAmountUSD" to 11.64,
-                    "bridgeFees" to 0.36,
+                    "toAmount" to "11640000",
+                    "bridgeFee" to 0.36,
                     "slippage" to "1",
                     "requestPayload" to mapOf(
                         "targetAddress" to "0xBC8552339dA68EB65C8b88B414B5854E0E366cFc",
@@ -334,6 +346,43 @@ class SkipProcessorTests {
                 ),
             ),
         )
-        assertTrue(expected == result)
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun testGetChainById() {
+        skipProcessor.chains = parser.asNativeList(parser.asNativeMap(templateToMap(skipChainsMock.payload))?.get("chains"))
+        val result = skipProcessor.getChainById("kaiyo-1")
+        val expected = mapOf(
+            "chain_name" to "kujira",
+            "chain_id" to "kaiyo-1",
+            "pfm_enabled" to false,
+            "cosmos_module_support" to mapOf(
+                "authz" to true,
+                "feegrant" to true,
+            ),
+            "supports_memo" to true,
+            "logo_uri" to "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/kaiyo/chain.png",
+            "bech32_prefix" to "kujira",
+            "fee_assets" to listOf(
+                mapOf(
+                    "denom" to "ibc/47BD209179859CDE4A2806763D7189B6E6FE13A17880FE2B42DE1E6C1E329E23",
+                    "gas_price" to null,
+                ),
+                mapOf(
+                    "denom" to "ibc/EFF323CC632EC4F747C61BCE238A758EFDB7699C3226565F7C20DA06509D59A5",
+                    "gas_price" to null,
+                ),
+            ),
+            "chain_type" to "cosmos",
+            "ibc_capabilities" to mapOf(
+                "cosmos_pfm" to false,
+                "cosmos_ibc_hooks" to false,
+                "cosmos_memo" to true,
+                "cosmos_autopilot" to false,
+            ),
+            "is_testnet" to false,
+        ).toJsonObject()
+        assertEquals(expected, result)
     }
 }

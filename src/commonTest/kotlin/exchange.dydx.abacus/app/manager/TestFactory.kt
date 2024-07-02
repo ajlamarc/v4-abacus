@@ -303,6 +303,8 @@ class TestChain : DYDXChainTransactionsProtocol {
 
     var transactionCallback: ((response: String?) -> Unit)? = null
 
+    var canceldOrderPayloads = mutableListOf<String>()
+
     var requests = mutableListOf<QueryType>()
 
     val dummySuccess = """
@@ -392,6 +394,7 @@ class TestChain : DYDXChainTransactionsProtocol {
     }
 
     fun cancelOrder(json: String, callback: (response: String?) -> Unit) {
+        canceldOrderPayloads.add(json)
         if (cancelOrderResponse != null) {
             callback(cancelOrderResponse)
         } else {

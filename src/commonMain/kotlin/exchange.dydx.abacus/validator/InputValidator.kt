@@ -5,6 +5,7 @@ import exchange.dydx.abacus.protocols.ParserProtocol
 import exchange.dydx.abacus.state.app.helper.Formatter
 import exchange.dydx.abacus.state.manager.BlockAndTime
 import exchange.dydx.abacus.state.manager.V4Environment
+import exchange.dydx.abacus.utils.NUM_PARENT_SUBACCOUNTS
 import exchange.dydx.abacus.utils.modify
 
 internal class InputValidator(
@@ -24,22 +25,16 @@ internal class InputValidator(
 
         "USER_MAX_ORDERS" to 1010,
         "ORDER_SIZE_BELOW_MIN_SIZE" to 1020,
-        "AMOUNT_INPUT_STEP_SIZE" to 1021,
         "NEW_POSITION_SIZE_OVER_MAX" to 1022,
         "MARKET_ORDER_NOT_ENOUGH_LIQUIDITY" to 1030,
         "MARKET_ORDER_ERROR_INDEX_PRICE_SLIPPAGE" to 1031,
         "MARKET_ORDER_ERROR_ORDERBOOK_SLIPPAGE" to 1032,
-        "MARKET_ORDER_PRICE_IMPACT_AT_MAX_LEVERAGE" to 1033,
         "ORDER_WOULD_FLIP_POSITION" to 1034,
         "TRIGGER_MUST_ABOVE_INDEX_PRICE" to 1040,
         "TRIGGER_MUST_BELOW_INDEX_PRICE" to 1041,
         "LIMIT_MUST_ABOVE_TRIGGER_PRICE" to 1042,
         "LIMIT_MUST_BELOW_TRIGGER_PRICE" to 1043,
         "PRICE_MUST_POSITIVE" to 1044,
-
-        "INVALID_LARGE_POSITION_LEVERAGE" to 1051,
-        "INVALID_NEW_POSITION_LEVERAGE" to 1052,
-        "INVALID_NEW_ACCOUNT_MARGIN_USAGE" to 1053,
 
         "BUY_TRIGGER_TOO_CLOSE_TO_LIQUIDATION_PRICE" to 1060,
         "SELL_TRIGGER_TOO_CLOSE_TO_LIQUIDATION_PRICE" to 1061,
@@ -58,7 +53,6 @@ internal class InputValidator(
 
         "WOULD_NOT_REDUCE_UNCHECK" to 1100,
 
-        "MARKET_ORDER_CLOSE_TO_MAX_LEVERAGE" to 1200,
         "MARKET_ORDER_WARNING_INDEX_PRICE_SLIPPAGE" to 1201,
         "MARKET_ORDER_WARNING_ORDERBOOK_SLIPPAGE" to 1202,
         "LIMIT_PRICE_TRIGGER_PRICE_SLIPPAGE_LOWER" to 1203,
@@ -87,6 +81,7 @@ internal class InputValidator(
     )
 
     fun validate(
+        subaccountNumber: Int?,
         wallet: Map<String, Any>?,
         user: Map<String, Any>?,
         subaccount: Map<String, Any>?,
@@ -99,8 +94,10 @@ internal class InputValidator(
         return if (input != null) {
             val transactionType = parser.asString(input["current"]) ?: return input
             val transaction = parser.asNativeMap(input[transactionType]) ?: return input
+            val isChildSubaccount = subaccountNumber != null && subaccountNumber >= NUM_PARENT_SUBACCOUNTS
+
             val errors = sort(
-                validate(
+                validateTransaction(
                     wallet,
                     user,
                     subaccount,
@@ -112,17 +109,27 @@ internal class InputValidator(
                     environment,
                 ),
             )
-            if (errors != input["errors"]) {
-                input.modify("errors", errors)
+
+            if (isChildSubaccount) {
+                if (errors != input["childSubaccountErrors"]) {
+                    input.modify("childSubaccountErrors", errors)
+                } else {
+                    input
+                }
             } else {
-                input
+                if (errors != input["errors"]) {
+                    input.modify("errors", errors)
+                } else {
+                    input
+                }
             }
         } else {
             input?.modify("errors", null)
+            input?.modify("childSubaccountErrors", null)
         }
     }
 
-    private fun validate(
+    private fun validateTransaction(
         wallet: Map<String, Any>?,
         user: Map<String, Any>?,
         subaccount: Map<String, Any>?,

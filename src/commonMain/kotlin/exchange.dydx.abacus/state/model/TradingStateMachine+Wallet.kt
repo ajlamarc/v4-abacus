@@ -1,6 +1,6 @@
 package exchange.dydx.abacus.state.model
 
-import exchange.dydx.abacus.calculator.MarginModeCalculator
+import exchange.dydx.abacus.calculator.MarginCalculator
 import exchange.dydx.abacus.responses.SocketInfo
 import exchange.dydx.abacus.state.changes.Changes
 import exchange.dydx.abacus.state.changes.StateChanges
@@ -29,7 +29,7 @@ internal fun TradingStateMachine.receivedSubaccountSubscribed(
     changes.add(Changes.historicalPnl)
     changes.add(Changes.tradingRewards)
     val subaccountNumber = parser.asInt(payload["subaccountNumber"]) ?: 0
-    val childSubaccountNumber = MarginModeCalculator.getChildSubaccountNumberForIsolatedMarginTrade(
+    val childSubaccountNumber = MarginCalculator.getChildSubaccountNumberForIsolatedMarginTrade(
         parser,
         account,
         subaccountNumber ?: 0,
@@ -58,19 +58,12 @@ internal fun TradingStateMachine.receivedSubaccountsChanges(
     val subaccountNumber =
         if (idElements?.size == 2) parser.asInt(idElements.lastOrNull()) ?: 0 else 0
     val childSubaccountNumber = info.childSubaccountNumber
-    val tradeChildSubaccountNumber = MarginModeCalculator.getChildSubaccountNumberForIsolatedMarginTrade(
-        parser,
-        account,
-        subaccountNumber,
-        parser.asMap(input?.get("trade")),
-    )
     val subaccountNumbers = iMutableListOf(subaccountNumber)
+
     if (childSubaccountNumber != null && !subaccountNumbers.contains(childSubaccountNumber)) {
         subaccountNumbers.add(childSubaccountNumber)
     }
-    if (!subaccountNumbers.contains(tradeChildSubaccountNumber)) {
-        subaccountNumbers.add(tradeChildSubaccountNumber)
-    }
+
     if (payload["accounts"] != null ||
         payload["subaccounts"] != null ||
         payload["positions"] != null ||
@@ -228,7 +221,13 @@ internal fun TradingStateMachine.onChainAccountBalances(payload: String): StateC
         val account = json.jsonArray.toList()
         this.wallet = walletProcessor.receivedAccountBalances(wallet, account)
         return StateChanges(iListOf(Changes.accountBalances), null)
-    } catch (exception: SerializationException) {
+    } catch (exception: SerializationException) { // JSON Deserialization exception
+        Logger.e {
+            "Failed to deserialize onChainAccountBalances: $payload \n" +
+                "Exception: $exception"
+        }
+        StateChanges(iListOf())
+    } catch (exception: IllegalArgumentException) { // .jsonArray exception
         Logger.e {
             "Failed to deserialize onChainAccountBalances: $payload \n" +
                 "Exception: $exception"

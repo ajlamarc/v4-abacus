@@ -23,6 +23,7 @@ import exchange.dydx.abacus.state.changes.Changes
 import exchange.dydx.abacus.state.changes.StateChanges
 import exchange.dydx.abacus.state.manager.ApiData
 import exchange.dydx.abacus.state.manager.BlockAndTime
+import exchange.dydx.abacus.state.manager.GasToken
 import exchange.dydx.abacus.state.manager.HistoricalPnlPeriod
 import exchange.dydx.abacus.state.manager.HistoricalTradingRewardsPeriod
 import exchange.dydx.abacus.state.manager.HumanReadableCancelOrderPayload
@@ -84,6 +85,7 @@ import exchange.dydx.abacus.state.v2.supervisor.triggerOrders
 import exchange.dydx.abacus.state.v2.supervisor.triggerOrdersPayload
 import exchange.dydx.abacus.state.v2.supervisor.withdrawPayload
 import exchange.dydx.abacus.utils.AnalyticsUtils
+import exchange.dydx.abacus.utils.GEO_POLLING_DURATION_SECONDS
 import exchange.dydx.abacus.utils.IMap
 import exchange.dydx.abacus.utils.IOImplementations
 import exchange.dydx.abacus.utils.JsonEncoder
@@ -222,6 +224,14 @@ internal class StateManagerAdaptorV2(
             }
         }
 
+    internal var gasToken: GasToken?
+        get() {
+            return connections.gasToken
+        }
+        set(value) {
+            connections.gasToken = value
+        }
+
     internal var market: String?
         get() {
             return markets.marketId
@@ -333,7 +343,7 @@ internal class StateManagerAdaptorV2(
         markets.readyToConnect = readyToConnect
         accounts.readyToConnect = readyToConnect
         if (readyToConnect) {
-            fetchGeo()
+            pollGeo()
         }
     }
 
@@ -464,6 +474,16 @@ internal class StateManagerAdaptorV2(
 
     private fun height(): BlockAndTime? {
         return null
+    }
+
+    private fun pollGeo() {
+        ioImplementations.timer?.schedule(
+            0.0,
+            GEO_POLLING_DURATION_SECONDS,
+        ) {
+            fetchGeo()
+            true
+        }
     }
 
     private fun fetchGeo() {
@@ -626,8 +646,8 @@ internal class StateManagerAdaptorV2(
         accounts.screen(address, callback)
     }
 
-    internal fun triggerCompliance(address: ComplianceAction, callback: TransactionCallback) {
-        accounts.triggerCompliance(address, callback)
+    internal fun triggerCompliance(action: ComplianceAction, callback: TransactionCallback?) {
+        accounts.triggerCompliance(action, callback)
     }
 
     private fun updateRestriction(indexerRestriction: UsageRestriction?) {
@@ -688,7 +708,12 @@ internal class StateManagerAdaptorV2(
             state?.transferStatuses,
             state?.restriction,
             state?.launchIncentive,
-            Compliance(geo, state?.compliance?.status ?: ComplianceStatus.COMPLIANT, state?.compliance?.updatedAt, state?.compliance?.expiresAt),
+            Compliance(
+                geo,
+                state?.compliance?.status ?: ComplianceStatus.COMPLIANT,
+                state?.compliance?.updatedAt,
+                state?.compliance?.expiresAt,
+            ),
         )
         ioImplementations.threading?.async(ThreadingType.main) {
             stateNotification?.stateChanged(
@@ -698,5 +723,6 @@ internal class StateManagerAdaptorV2(
                 ),
             )
         }
+        triggerCompliance(ComplianceAction.CONNECT, null)
     }
 }

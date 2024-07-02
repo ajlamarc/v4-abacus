@@ -87,6 +87,7 @@ data class HumanReadableTriggerOrdersPayload(
 @JsExport
 @Serializable
 data class HumanReadableSubaccountTransferPayload(
+    val senderAddress: String,
     val subaccountNumber: Int,
     val amount: String,
     val destinationAddress: String,
@@ -128,4 +129,14 @@ data class HumanReadableTransferPayload(
     val subaccountNumber: Int,
     val amount: String,
     val recipient: String,
+)
+
+@JsExport
+@Serializable
+data class TransferChainInfo(
+    val chainName: String,
+    val chainId: String,
+    val logoUri: String,
+    val chainType: String,
+    val isTestnet: Boolean,
 )

@@ -55,7 +55,7 @@ data class MarketsConfigs(
             subscribeToCandles = true,
         )
         val forWeb = MarketsConfigs(
-            retrieveSparklines = false,
+            retrieveSparklines = true,
             retrieveCandles = false,
             retrieveHistoricalFundings = true,
             subscribeToMarkets = true,
@@ -239,6 +239,7 @@ data class AppConfigsV2(
             onboardingConfigs = OnboardingConfigs.forApp,
             loadRemote = true,
             triggerOrderToast = false,
+            enableLogger = true,
         )
         val forProgrammaticTraders = AppConfigsV2(
             systemConfigs = SystemConfigs.forProgrammaticTraders,

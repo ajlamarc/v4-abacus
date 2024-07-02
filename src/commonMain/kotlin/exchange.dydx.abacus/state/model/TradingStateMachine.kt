@@ -579,8 +579,10 @@ open class TradingStateMachine(
                     } else {
                         null
                     }
+
             this.input =
                     inputValidator.validate(
+                            subaccountNumber,
                             this.wallet,
                             this.user,
                             subaccount,
@@ -591,23 +593,25 @@ open class TradingStateMachine(
                             this.environment,
                     )
 
-            when (this.input?.get("current")) {
-                "trade" -> {
-                    calculateTrade(subaccountNumber)
+            if (subaccountNumber != null) {
+                when (this.input?.get("current")) {
+                    "trade" -> {
+                        calculateTrade(subaccountNumber)
+                    }
+                    "closePosition" -> {
+                        calculateClosePosition(subaccountNumber)
+                    }
+                    "transfer" -> {
+                        calculateTransfer(subaccountNumber)
+                    }
+                    "triggerOrders" -> {
+                        calculateTriggerOrders(subaccountNumber)
+                    }
+                    "adjustIsolatedMargin" -> {
+                        calculateAdjustIsolatedMargin(subaccountNumber)
+                    }
+                    else -> {}
                 }
-                "closePosition" -> {
-                    calculateClosePosition(subaccountNumber)
-                }
-                "transfer" -> {
-                    calculateTransfer(subaccountNumber)
-                }
-                "triggerOrders" -> {
-                    calculateTriggerOrders(subaccountNumber)
-                }
-                "adjustIsolatedMargin" -> {
-                    calculateAdjustIsolatedMargin(subaccountNumber)
-                }
-                else -> {}
             }
         }
         recalculateStates(changes)
@@ -662,11 +666,11 @@ open class TradingStateMachine(
         return StateChanges(realChanges, changes.markets, changes.subaccountNumbers)
     }
 
-    private fun calculateTrade(subaccountNumber: Int?) {
+    private fun calculateTrade(subaccountNumber: Int) {
         calculateTrade("trade", TradeCalculation.trade, subaccountNumber)
     }
 
-    private fun calculateTrade(tag: String, calculation: TradeCalculation, subaccountNumber: Int?) {
+    private fun calculateTrade(tag: String, calculation: TradeCalculation, subaccountNumber: Int) {
         val input = this.input?.mutable()
         val trade = parser.asNativeMap(input?.get(tag))
         val inputType = parser.asString(parser.value(trade, "size.input"))
@@ -687,7 +691,7 @@ open class TradingStateMachine(
         this.input = input
     }
 
-    private fun calculateClosePosition(subaccountNumber: Int?) {
+    private fun calculateClosePosition(subaccountNumber: Int) {
         calculateTrade("closePosition", TradeCalculation.closePosition, subaccountNumber)
     }
 
@@ -911,45 +915,25 @@ open class TradingStateMachine(
             "trade" -> {
                 val trade = parser.asNativeMap(input["trade"]) ?: return null
                 val type = parser.asString(trade["type"]) ?: return null
-                val isolatedMargin = parser.asString(trade["marginMode"]) == "ISOLATED"
                 return when (type) {
                     "MARKET", "STOP_MARKET", "TAKE_PROFIT_MARKET", "TRAILING_STOP" -> {
-                        if (isolatedMargin) {
-                            listOf(
-                                    ReceiptLine.ExpectedPrice.rawValue,
-                                    ReceiptLine.LiquidationPrice.rawValue,
-                                    ReceiptLine.PositionMargin.rawValue,
-                                    ReceiptLine.PositionLeverage.rawValue,
-                                    ReceiptLine.Fee.rawValue,
-                                    ReceiptLine.Reward.rawValue,
-                            )
-                        } else {
-                            listOf(
-                                    ReceiptLine.BuyingPower.rawValue,
-                                    ReceiptLine.MarginUsage.rawValue,
-                                    ReceiptLine.ExpectedPrice.rawValue,
-                                    ReceiptLine.Fee.rawValue,
-                                    ReceiptLine.Reward.rawValue,
-                            )
-                        }
+                        listOf(
+                                ReceiptLine.ExpectedPrice.rawValue,
+                                ReceiptLine.LiquidationPrice.rawValue,
+                                ReceiptLine.PositionMargin.rawValue,
+                                ReceiptLine.PositionLeverage.rawValue,
+                                ReceiptLine.Fee.rawValue,
+                                ReceiptLine.Reward.rawValue,
+                        )
                     }
                     else -> {
-                        if (isolatedMargin) {
-                            listOf(
-                                    ReceiptLine.LiquidationPrice.rawValue,
-                                    ReceiptLine.PositionMargin.rawValue,
-                                    ReceiptLine.PositionLeverage.rawValue,
-                                    ReceiptLine.Fee.rawValue,
-                                    ReceiptLine.Reward.rawValue,
-                            )
-                        } else {
-                            listOf(
-                                    ReceiptLine.BuyingPower.rawValue,
-                                    ReceiptLine.MarginUsage.rawValue,
-                                    ReceiptLine.Fee.rawValue,
-                                    ReceiptLine.Reward.rawValue,
-                            )
-                        }
+                        listOf(
+                                ReceiptLine.LiquidationPrice.rawValue,
+                                ReceiptLine.PositionMargin.rawValue,
+                                ReceiptLine.PositionLeverage.rawValue,
+                                ReceiptLine.Fee.rawValue,
+                                ReceiptLine.Reward.rawValue,
+                        )
                     }
                 }
             }
@@ -991,33 +975,13 @@ open class TradingStateMachine(
                 }
             }
             "adjustIsolatedMargin" -> {
-                val adjustIsolatedMargin =
-                        parser.asNativeMap(input["adjustIsolatedMargin"]) ?: return null
-                val type = parser.asString(adjustIsolatedMargin["Type"]) ?: return null
-
-                when (type) {
-                    "ADD" -> {
-                        listOf(
-                                ReceiptLine.CrossFreeCollateral.rawValue,
-                                ReceiptLine.CrossMarginUsage.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.LiquidationPrice.rawValue,
-                        )
-                    }
-                    "REMOVE" -> {
-                        listOf(
-                                ReceiptLine.CrossFreeCollateral.rawValue,
-                                ReceiptLine.CrossMarginUsage.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.LiquidationPrice.rawValue,
-                        )
-                    }
-                    else -> {
-                        listOf()
-                    }
-                }
+                listOf(
+                        ReceiptLine.CrossFreeCollateral.rawValue,
+                        ReceiptLine.CrossMarginUsage.rawValue,
+                        ReceiptLine.PositionLeverage.rawValue,
+                        ReceiptLine.PositionMargin.rawValue,
+                        ReceiptLine.LiquidationPrice.rawValue,
+                )
             }
             else -> null
         }
@@ -1306,6 +1270,7 @@ open class TradingStateMachine(
             if (changes.changes.contains(Changes.input)) {
                 this.input =
                         inputValidator.validate(
+                                subaccountNumber,
                                 this.wallet,
                                 this.user,
                                 subaccount,
@@ -1362,24 +1327,6 @@ open class TradingStateMachine(
                 launchIncentive,
                 geo,
         )
-    }
-
-    private fun calculateAccount(subaccountNumbers: IList<Int>, period: CalculationPeriod) {
-        this.account?.let {
-            this.marketsSummary?.let { marketsSummary ->
-                parser.asNativeMap(marketsSummary["markets"])?.let { markets ->
-                    this.account =
-                            accountCalculator.calculate(
-                                    it,
-                                    subaccountNumbers,
-                                    null,
-                                    markets,
-                                    priceOverwrite(markets),
-                                    setOf(period),
-                            )
-                }
-            }
-        }
     }
 
     private fun priceOverwrite(markets: Map<String, Any>): Map<String, Any>? {

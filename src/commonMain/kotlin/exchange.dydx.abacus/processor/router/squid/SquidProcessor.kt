@@ -170,6 +170,10 @@ internal class SquidProcessor(
         return processor.received(existing, payload)
     }
 
+    override fun getChainById(chainId: String): Map<String, Any>? {
+        return parser.asNativeMap(this.chains?.find { parser.asString(parser.asNativeMap(it)?.get("chainId")) == chainId })
+    }
+
     override fun updateTokensDefaults(modified: MutableMap<String, Any>, selectedChainId: String?) {
         val tokenOptions = tokenOptions(selectedChainId)
         internalState.tokens = tokenOptions
@@ -182,6 +186,16 @@ internal class SquidProcessor(
     override fun defaultChainId(): String? {
         val selectedChain = parser.asNativeMap(this.chains?.firstOrNull())
         return parser.asString(selectedChain?.get("chainId"))
+    }
+
+    override fun getTokenByDenomAndChainId(tokenDenom: String?, chainId: String?): Map<String, Any>? {
+        val tokensList = filteredTokens(chainId)
+        tokensList?.find {
+            parser.asString(parser.asNativeMap(it)?.get("address")) == tokenDenom
+        }?.let {
+            return parser.asNativeMap(it)
+        }
+        return null
     }
 
     override fun selectedTokenSymbol(tokenAddress: String?, selectedChainId: String?): String? {
