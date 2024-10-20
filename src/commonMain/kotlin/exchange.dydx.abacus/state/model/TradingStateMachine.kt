@@ -90,9 +90,6 @@ import kollections.toIMutableMap
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration.Companion.days
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 
 @Suppress("UNCHECKED_CAST")
 @JsExport
@@ -148,7 +145,7 @@ open class TradingStateMachine(
 
     internal var data: Map<String, Any>? = null
 
-    private var dummySubaccountPNLs = mutableMapOf<String, SubaccountHistoricalPNL>()
+    private var dummySubaccountPNLs = mutableMapOf<String, SubaccountHistoricalPNL>();
 
     internal val tokensInfo: Map<String, TokenInfo>
         get() = environment?.tokens!!
@@ -314,9 +311,9 @@ open class TradingStateMachine(
     }
 
     internal fun configurations(
-            payload: String,
-            subaccountNumber: Int?,
-            deploymentUri: String
+        payload: String,
+        subaccountNumber: Int?,
+        deploymentUri: String
     ): StateChanges {
         val json = parser.decodeJsonObject(payload)
         if (staticTyping) {
@@ -469,20 +466,19 @@ open class TradingStateMachine(
                 Changes.vault
                 -> true
 
-                        // Restriction is handled separately and shouldn't have gone through here
-                        Changes.restriction -> {
-                            Logger.d {
-                                "Restriction is handled separately and shouldn't have gone through here"
-                            }
-                            false
-                        }
-                        Changes.compliance -> {
-                            Logger.d {
-                                "Compliance is handled separately and shouldn't have gone through here"
-                            }
-                            false
-                        }
-                    }
+                Changes.wallet -> state?.wallet != wallet
+                Changes.input -> state?.input != input
+
+                // Restriction is handled separately and shouldn't have gone through here
+                Changes.restriction -> {
+                    Logger.d { "Restriction is handled separately and shouldn't have gone through here" }
+                    false
+                }
+                Changes.compliance -> {
+                    Logger.d { "Compliance is handled separately and shouldn't have gone through here" }
+                    false
+                }
+            }
             if (didChange) {
                 realChanges.add(change)
             }
@@ -861,34 +857,37 @@ open class TradingStateMachine(
                 return when (type) {
                     "MARKET", "STOP_MARKET", "TAKE_PROFIT_MARKET", "TRAILING_STOP" -> {
                         listOf(
-                                ReceiptLine.ExpectedPrice.rawValue,
-                                ReceiptLine.LiquidationPrice.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                            ReceiptLine.ExpectedPrice.rawValue,
+                            ReceiptLine.LiquidationPrice.rawValue,
+                            ReceiptLine.PositionMargin.rawValue,
+                            ReceiptLine.PositionLeverage.rawValue,
+                            ReceiptLine.Fee.rawValue,
+                            ReceiptLine.Reward.rawValue,
                         )
                     }
+
                     else -> {
                         listOf(
-                                ReceiptLine.LiquidationPrice.rawValue,
-                                ReceiptLine.PositionMargin.rawValue,
-                                ReceiptLine.PositionLeverage.rawValue,
-                                ReceiptLine.Fee.rawValue,
-                                ReceiptLine.Reward.rawValue,
+                            ReceiptLine.LiquidationPrice.rawValue,
+                            ReceiptLine.PositionMargin.rawValue,
+                            ReceiptLine.PositionLeverage.rawValue,
+                            ReceiptLine.Fee.rawValue,
+                            ReceiptLine.Reward.rawValue,
                         )
                     }
                 }
             }
+
             "closePosition" -> {
                 listOf(
-                        ReceiptLine.BuyingPower.rawValue,
-                        ReceiptLine.MarginUsage.rawValue,
-                        ReceiptLine.ExpectedPrice.rawValue,
-                        ReceiptLine.Fee.rawValue,
-                        ReceiptLine.Reward.rawValue,
+                    ReceiptLine.BuyingPower.rawValue,
+                    ReceiptLine.MarginUsage.rawValue,
+                    ReceiptLine.ExpectedPrice.rawValue,
+                    ReceiptLine.Fee.rawValue,
+                    ReceiptLine.Reward.rawValue,
                 )
             }
+
             "transfer" -> {
                 val transfer = parser.asNativeMap(input["transfer"]) ?: return null
                 val type = parser.asString(transfer["type"]) ?: return null
@@ -906,27 +905,31 @@ open class TradingStateMachine(
                             ReceiptLine.TransferRouteEstimatedDuration.rawValue,
                         )
                     }
+
                     "TRANSFER_OUT" -> {
                         listOf(
-                                ReceiptLine.Equity.rawValue,
-                                ReceiptLine.MarginUsage.rawValue,
-                                ReceiptLine.Fee.rawValue,
+                            ReceiptLine.Equity.rawValue,
+                            ReceiptLine.MarginUsage.rawValue,
+                            ReceiptLine.Fee.rawValue,
                         )
                     }
+
                     else -> {
                         listOf()
                     }
                 }
             }
+
             "adjustIsolatedMargin" -> {
                 listOf(
-                        ReceiptLine.CrossFreeCollateral.rawValue,
-                        ReceiptLine.CrossMarginUsage.rawValue,
-                        ReceiptLine.PositionLeverage.rawValue,
-                        ReceiptLine.PositionMargin.rawValue,
-                        ReceiptLine.LiquidationPrice.rawValue,
+                    ReceiptLine.CrossFreeCollateral.rawValue,
+                    ReceiptLine.CrossMarginUsage.rawValue,
+                    ReceiptLine.PositionLeverage.rawValue,
+                    ReceiptLine.PositionMargin.rawValue,
+                    ReceiptLine.LiquidationPrice.rawValue,
                 )
             }
+
             else -> null
         }
     }
@@ -986,7 +989,6 @@ open class TradingStateMachine(
                     marketsSummary = null
                 }
             }
-                    ?: run { marketsSummary = null }
         }
         if (changes.changes.contains(Changes.orderbook)) {
             val markets = changes.markets
@@ -1043,14 +1045,12 @@ open class TradingStateMachine(
             if (markets != null) {
                 val modified = historicalFundings?.toIMutableMap() ?: mutableMapOf()
                 for (marketId in markets) {
-                    val data =
-                            parser.asList(
-                                    parser.value(
-                                            data,
-                                            "markets.markets.$marketId.historicalFunding",
-                                    ),
-                            ) as?
-                                    IList<Map<String, Any>>
+                    val data = parser.asList(
+                        parser.value(
+                            data,
+                            "markets.markets.$marketId.historicalFunding",
+                        ),
+                    ) as? IList<Map<String, Any>>
                     val existing = historicalFundings?.get(marketId)
                     val historicalFunding = MarketHistoricalFunding.create(existing, parser, data)
                     modified.typedSafeSet(marketId, historicalFunding)
@@ -1110,7 +1110,6 @@ open class TradingStateMachine(
                     assets = null
                 }
             }
-                    ?: run { assets = null }
         }
         if (changes.changes.contains(Changes.configs)) {
             if (staticTyping) {
@@ -1185,6 +1184,7 @@ open class TradingStateMachine(
                                 staticTyping = staticTyping,
                                 internalState = internalState.wallet.account.groupedSubaccounts[subaccountNumber],
                             )
+                            groupedSubaccounts.typedSafeSet("$subaccountNumber", subaccount)
                         }
                     }
                     Account(
@@ -1200,10 +1200,9 @@ open class TradingStateMachine(
                     )
                 }
             }
-            if (changes.changes.contains(Changes.accountBalances) ||
-                            changes.changes.contains(
-                                    Changes.tradingRewards,
-                            )
+            if (changes.changes.contains(Changes.accountBalances) || changes.changes.contains(
+                    Changes.tradingRewards,
+                )
             ) {
                 account = Account.create(
                     existing = account,
@@ -1225,12 +1224,7 @@ open class TradingStateMachine(
         for (subaccountNumber in subaccountNumbers) {
             val subaccountText = "$subaccountNumber"
             val subaccount =
-                    parser.asNativeMap(
-                            parser.value(this.account, "groupedSubaccounts.$subaccountNumber")
-                    )
-                            ?: parser.asNativeMap(
-                                    parser.value(this.account, "subaccounts.$subaccountNumber")
-                            )
+                parser.asNativeMap(parser.value(this.account, "groupedSubaccounts.$subaccountNumber")) ?: parser.asNativeMap(parser.value(this.account, "subaccounts.$subaccountNumber"))
 
             if (changes.changes.contains(Changes.historicalPnl)) {
                 val now = ServerTime.now()
@@ -1303,13 +1297,11 @@ open class TradingStateMachine(
             if (changes.changes.contains(Changes.fundingPayments)) {
                 val modifiedFundingPayments = fundingPayments?.toIMutableMap() ?: mutableMapOf()
                 var subaccountFundingPayments = fundingPayments?.get(subaccountText)
-                subaccountFundingPayments =
-                        SubaccountFundingPayment.create(
-                                subaccountFundingPayments,
-                                parser,
-                                subaccountFundingPayments(subaccountNumber) as?
-                                        IList<Map<String, Any>>,
-                        )
+                subaccountFundingPayments = SubaccountFundingPayment.create(
+                    subaccountFundingPayments,
+                    parser,
+                    subaccountFundingPayments(subaccountNumber) as? IList<Map<String, Any>>,
+                )
                 modifiedFundingPayments.typedSafeSet(subaccountText, subaccountFundingPayments)
                 fundingPayments = modifiedFundingPayments
             }
@@ -1406,7 +1398,6 @@ open class TradingStateMachine(
             } else {
                 vault = null
             }
-                    ?: run { launchIncentive = null }
         }
         return PerpetualState(
             assets = assets,
@@ -1434,13 +1425,11 @@ open class TradingStateMachine(
     }
 
     private fun priceOverwrite(markets: Map<String, Any>): Map<String, Any>? {
-        // TODO(@aforaleka): Uncomment when protocol can match collateralization check at limit
-        // price
+        // TODO(@aforaleka): Uncomment when protocol can match collateralization check at limit price
         // if (parser.asString(input?.get("current")) == "trade") {
         //     val trade = parser.asNativeMap(input?.get("trade"))
         //     when (parser.asString(trade?.get("type"))) {
-        //         "LIMIT", "STOP_LIMIT", "TAKE_PROFIT", "TRAILING_STOP", "STOP_MARKET",
-        // "TAKE_PROFIT_MARKET" -> {
+        //         "LIMIT", "STOP_LIMIT", "TAKE_PROFIT", "TRAILING_STOP", "STOP_MARKET", "TAKE_PROFIT_MARKET" -> {
         //             val price = parser.asDouble(parser.value(trade, "summary.price"))
         //             val marketId = parser.asString(trade?.get("marketId"))
         //             if (marketId != null && price != null) {
@@ -1449,8 +1438,7 @@ open class TradingStateMachine(
         //                     parser.asDouble(market?.get("oraclePrice"))
         //                 if (oraclePrice != null) {
         //                     val side = parser.asString(trade?.get("side"))
-        //                     if ((side == "BUY" && price < oraclePrice) || (side == "SELL" &&
-        // price > oraclePrice)) {
+        //                     if ((side == "BUY" && price < oraclePrice) || (side == "SELL" && price > oraclePrice)) {
         //                         return iMapOf(marketId to price)
         //                     }
         //                 }
@@ -1461,7 +1449,8 @@ open class TradingStateMachine(
         return null
     }
 
-    private fun setMarkets(markets: Map<String, Any>?) {}
+    private fun setMarkets(markets: Map<String, Any>?) {
+    }
 
     fun setHistoricalPnlDays(days: Int, subaccountNumber: Int): StateResponse {
         return if (historicalPnlDays != days) {
@@ -1482,12 +1471,11 @@ open class TradingStateMachine(
         val input = input
         return if (input != null) {
             val current = parser.asString(input["current"])
-            val modified =
-                    when (current) {
-                        "trade", "closePosition" -> clearTradeInput(input)
-                        "transfer" -> clearTransferInput(input)
-                        else -> null
-                    }
+            val modified = when (current) {
+                "trade", "closePosition" -> clearTradeInput(input)
+                "transfer" -> clearTransferInput(input)
+                else -> null
+            }
             if (modified != null) {
                 this.input = modified
 
@@ -1527,12 +1515,11 @@ open class TradingStateMachine(
     fun received(subaccountNumber: Int, height: BlockAndTime?): StateResponse {
         val wallet = wallet
         if (wallet != null) {
-            val (modifiedWallet, updated) =
-                    walletProcessor.received(
-                            wallet,
-                            subaccountNumber,
-                            height,
-                    )
+            val (modifiedWallet, updated) = walletProcessor.received(
+                wallet,
+                subaccountNumber,
+                height,
+            )
             if (updated) {
                 this.wallet = wallet
 
