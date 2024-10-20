@@ -78,6 +78,7 @@ data class EnvironmentLinks(
     val blogs: String?,
     val help: String?,
     val vaultLearnMore: String?,
+    val vaultTos: String?,
     val launchIncentive: String?,
     val statusPage: String?,
     val withdrawalGateLearnMore: String?,
@@ -102,6 +103,7 @@ data class EnvironmentLinks(
             val statusPage = parser.asString(data["statusPage"])
             val withdrawalGateLearnMore = parser.asString(data["withdrawalGateLearnMore"])
             val equityTiersLearnMore = parser.asString(data["equityTiersLearnMore"])
+            val vaultTos = parser.asString(data["vaultTos"])
             return EnvironmentLinks(
                 tos,
                 privacy,
@@ -113,6 +115,7 @@ data class EnvironmentLinks(
                 blogs,
                 help,
                 vaultLearnMore,
+                vaultTos,
                 launchIncentive,
                 statusPage,
                 withdrawalGateLearnMore,
@@ -550,6 +553,12 @@ data object StatsigConfig {
     var dc_max_safe_bridge_fees: Float = Float.POSITIVE_INFINITY
     var ff_enable_limit_close: Boolean = false
     var ff_enable_timestamp_nonce: Boolean = false
+}
+
+@JsExport
+@Suppress("PropertyName")
+data object AutoSweepConfig {
+    var disable_autosweep: Boolean = false
 }
 
 @JsExport

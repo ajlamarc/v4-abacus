@@ -17,7 +17,6 @@ import kollections.toIList
 import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
 import kotlin.math.abs
-import kotlin.math.floor
 
 @JsExport
 @Serializable
@@ -25,6 +24,7 @@ data class VaultFormData(
     val action: VaultFormAction,
     val amount: Double?,
     val acknowledgedSlippage: Boolean,
+    val acknowledgedTerms: Boolean,
     val inConfirmationStep: Boolean,
 )
 
@@ -165,6 +165,13 @@ internal class VaultFormValidationErrors(
         titleKey = "APP.VAULTS.ACKNOWLEDGE_HIGH_SLIPPAGE",
     )
 
+    fun mustAckTerms() = createError(
+        code = "MUST_ACK_TERMS",
+        type = ErrorType.error,
+        fields = listOf("acknowledgeTerms"),
+        titleKey = "APP.VAULTS.ACKNOWLEDGE_MEGAVAULT_TERMS",
+    )
+
     fun vaultAccountMissing() = createError(
         code = "VAULT_ACCOUNT_MISSING",
         type = ErrorType.error,
@@ -207,6 +214,7 @@ data class VaultWithdrawData(
 @Serializable
 data class VaultFormSummaryData(
     val needSlippageAck: Boolean?,
+    val needTermsAck: Boolean?,
     val marginUsage: Double?,
     val freeCollateral: Double?,
     val vaultBalance: Double?,
@@ -245,7 +253,17 @@ object VaultDepositWithdrawFormValidator {
         if (shareValue == 0.0) {
             return 0.0
         }
-        return (amount / shareValue).toLong().toDouble()
+
+        val amountToUse = if (vaultAccount?.withdrawableUsdc != null &&
+            vaultAccount.withdrawableUsdc - amount >= 0 &&
+            vaultAccount.withdrawableUsdc - amount <= 0.01
+        ) {
+            vaultAccount.withdrawableUsdc
+        } else {
+            amount
+        }
+
+        return (amountToUse / shareValue).toLong().toDouble()
     }
 
     fun validateVaultForm(
@@ -259,15 +277,23 @@ object VaultDepositWithdrawFormValidator {
         val errors = mutableListOf<ValidationError>()
         var submissionData: VaultDepositWithdrawSubmissionData? = null
 
-        // Calculate post-operation values and slippage
-        val amount = formData.amount ?: 0.0
-
-        val shareValue = vaultAccount?.shareValue
-        val sharesToAttemptWithdraw = if (amount > 0 && shareValue != null && shareValue > 0) {
-            // shares must be whole numbers
-            floor(amount / shareValue)
+        val sharesToAttemptWithdraw = if (formData.action == VaultFormAction.WITHDRAW &&
+            vaultAccount != null &&
+            (vaultAccount.shareValue ?: 0.0) > 0.0 &&
+            formData.amount != null
+        ) {
+            calculateSharesToWithdraw(vaultAccount, formData.amount)
         } else {
             null
+        }
+
+        val amount = when (formData.action) {
+            VaultFormAction.DEPOSIT -> formData.amount ?: 0.0
+            VaultFormAction.WITHDRAW -> if (sharesToAttemptWithdraw != null) {
+                sharesToAttemptWithdraw * (vaultAccount?.shareValue ?: 0.0)
+            } else {
+                formData.amount ?: 0.0
+            }
         }
 
         val withdrawnAmountIncludingSlippage = slippageResponse?.expectedQuoteQuantums?.let { it / 1_000_000.0 }
@@ -311,6 +337,7 @@ object VaultDepositWithdrawFormValidator {
             0.0
         }
         val needSlippageAck = slippagePercent >= SLIPPAGE_PERCENT_ACK && formData.inConfirmationStep
+        val needTermsAck = formData.action == VaultFormAction.DEPOSIT && formData.inConfirmationStep
 
         // Perform validation checks and populate errors list
         if (accountData == null) {
@@ -335,6 +362,10 @@ object VaultDepositWithdrawFormValidator {
             if (accountData?.marginUsage == null || accountData.freeCollateral == null) {
                 errors.add(vaultFormValidationErrors.accountDataMissing(accountData?.canViewAccount))
             }
+        }
+
+        if (needTermsAck && !formData.acknowledgedTerms) {
+            errors.add(vaultFormValidationErrors.mustAckTerms())
         }
 
         when (formData.action) {
@@ -407,6 +438,7 @@ object VaultDepositWithdrawFormValidator {
         // Prepare summary data
         val summaryData = VaultFormSummaryData(
             needSlippageAck = needSlippageAck,
+            needTermsAck = needTermsAck,
             marginUsage = postOpMarginUsage,
             freeCollateral = postOpFreeCollateral,
             vaultBalance = postOpVaultBalance,

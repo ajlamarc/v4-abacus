@@ -55,7 +55,8 @@ class V4StateManagerConfigs(
                          "status":"/v1/status"
                       },
                       "configs":{
-                         "markets":"/apps/dydx-v4/configs/markets.json"
+                         "markets":"/apps/dydx-v4/configs/markets.json",
+                         "assets": "https://66iv2m87ol.execute-api.ap-northeast-1.amazonaws.com/mainnet/metadata-service/v1/info"
                       },
                       "launchIncentive":{
                          "graphql":"/query/ccar-perpetuals",
