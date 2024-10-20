@@ -1,11 +1,17 @@
 package exchange.dydx.abacus.validation
 
-import exchange.dydx.abacus.payload.v3.V3BaseTests
+import exchange.dydx.abacus.payload.v4.V4BaseTests
 import exchange.dydx.abacus.responses.StateResponse
 import exchange.dydx.abacus.state.model.trade
+import exchange.dydx.abacus.tests.extensions.parseOnChainEquityTiers
+import exchange.dydx.abacus.tests.extensions.socket
 
-open class ValidationsTests : V3BaseTests() {
+open class ValidationsTests : V4BaseTests() {
     override fun setup() {
+        super.setup()
+
+        perp.internalState.wallet.walletAddress = "0x1234567890"
+
         test({
             loadValidationsMarkets()
         }, null)
@@ -16,10 +22,6 @@ open class ValidationsTests : V3BaseTests() {
 
         test({
             loadValidationsAccounts()
-        }, null)
-
-        test({
-            loadUser()
         }, null)
 
         test({

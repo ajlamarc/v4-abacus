@@ -5,6 +5,7 @@ import exchange.dydx.abacus.protocols.ParserProtocol
 import exchange.dydx.abacus.utils.Numeric
 import exchange.dydx.abacus.utils.mutable
 import exchange.dydx.abacus.utils.safeSet
+import kotlin.math.max
 
 internal enum class CalculationPeriod(val rawValue: String) {
     current("current"),
@@ -17,7 +18,6 @@ internal enum class CalculationPeriod(val rawValue: String) {
     }
 }
 
-@Suppress("UNCHECKED_CAST")
 internal class SubaccountCalculator(val parser: ParserProtocol) {
     internal fun calculate(
         subaccount: Map<String, Any>?,
@@ -159,13 +159,15 @@ internal class SubaccountCalculator(val parser: ParserProtocol) {
                             set(maxLeverage, modified, "maxLeverage", period)
 
                             if (entryPrice != null) {
+                                val leverage = parser.asDouble(value(position, "leverage", period))
+                                val scaledLeverage = max(leverage?.abs() ?: 1.0, 1.0)
                                 val entryValue = size * entryPrice
                                 val currentValue = size * oraclePrice
                                 val unrealizedPnl = currentValue - entryValue
-                                val unrealizedPnlPercent =
-                                    if (entryValue != Numeric.double.ZERO) unrealizedPnl / entryValue.abs() else null
+                                val scaledUnrealizedPnlPercent =
+                                    if (entryValue != Numeric.double.ZERO) unrealizedPnl / entryValue.abs() * scaledLeverage else null
                                 set(unrealizedPnl, modified, "unrealizedPnl", period)
-                                set(unrealizedPnlPercent, modified, "unrealizedPnlPercent", period)
+                                set(scaledUnrealizedPnlPercent, modified, "unrealizedPnlPercent", period)
                             }
 
                             val marginMode = parser.asString(parser.value(position, "marginMode"))
@@ -243,7 +245,20 @@ internal class SubaccountCalculator(val parser: ParserProtocol) {
     ) {
         for (period in periods) {
             val quoteBalance = parser.asDouble(value(subaccount, "quoteBalance", period))
-            if (quoteBalance != null) {
+
+            var hasPositionCalculated = false
+            positions?.let {
+                for ((key, position) in positions) {
+                    val valueTotal = parser.asDouble(value(position, "valueTotal", period))
+                    if (valueTotal != null) {
+                        hasPositionCalculated = true
+                        break
+                    }
+                }
+            }
+            val positionsReady = positions.isNullOrEmpty() || hasPositionCalculated
+
+            if (quoteBalance != null && positionsReady) {
                 var notionalTotal = Numeric.double.ZERO
                 var valueTotal = Numeric.double.ZERO
                 var initialRiskTotal = Numeric.double.ZERO
@@ -329,7 +344,7 @@ internal class SubaccountCalculator(val parser: ParserProtocol) {
                     set(leverage, position, "leverage", period)
                     val liquidationPrice = calculatePositionLiquidationPrice(
                         equity = equity ?: Numeric.double.ZERO,
-                        market = key,
+                        marketId = key,
                         positions = positions,
                         markets = markets,
                         period = period,
@@ -359,54 +374,42 @@ internal class SubaccountCalculator(val parser: ParserProtocol) {
 
     private fun calculatePositionLiquidationPrice(
         equity: Double,
-        market: String,
+        marketId: String,
         positions: Map<String, MutableMap<String, Any>>?,
         markets: Map<String, Any>?,
         period: CalculationPeriod,
     ): Double? {
         val otherPositionsRisk =
-            calculationOtherPositionsRisk(positions, markets, except = market, period)
+            calculationOtherPositionsRisk(positions, markets, except = marketId, period)
 
-        var liquidationPrice: Double? = null
-        positions?.get(market)?.let { position ->
-            parser.asNativeMap(markets?.get(market))?.let { market ->
-                parser.asNativeMap(market["configs"])?.let { configs ->
-                    parser.asDouble(value(position, "adjustedMmf", period))
-                        ?.let { maintenanceMarginFraction ->
-                            parser.asDouble(oraclePrice(market))?.let { oraclePrice ->
-                                parser.asDouble(value(position, "size", period))?.let { size ->
-                                    /*
-                                      const liquidationPrice =
-                                        side === POSITION_SIDES.LONG
-                                          ? otherPositionsRisk
-                                              .plus(sizeBN.times(oraclePrice))
-                                              .minus(accountEquity)
-                                              .div(sizeBN.minus(sizeBN.times(maintenanceMarginFraction)))
-                                          : otherPositionsRisk
-                                              .plus(sizeBN.times(oraclePrice))
-                                              .minus(accountEquity)
-                                              .div(sizeBN.times(maintenanceMarginFraction).plus(sizeBN));
-                                     */
-                                    val denominator =
-                                        if (size > Numeric.double.ZERO) (size - size * maintenanceMarginFraction) else (size + size * maintenanceMarginFraction)
-                                    liquidationPrice = if (denominator != Numeric.double.ZERO) {
-                                        (otherPositionsRisk + size * oraclePrice - equity) / denominator
-                                    } else {
-                                        null
-                                    }
-                                    if (liquidationPrice != null && liquidationPrice!! < Numeric.double.ZERO) {
-                                        liquidationPrice = null
-                                    }
-                                }
-                            }
-                        }
-                }
-            }
+        val position = positions?.get(marketId) ?: return null
+        val market = parser.asNativeMap(markets?.get(marketId)) ?: return null
+        val maintenanceMarginFraction = parser.asDouble(value(position, "adjustedMmf", period)) ?: return null
+        val oraclePrice = parser.asDouble(oraclePrice(market)) ?: return null
+        val size = parser.asDouble(value(position, "size", period)) ?: return null
+
+        /*
+          const liquidationPrice =
+            side === POSITION_SIDES.LONG
+              ? otherPositionsRisk
+                  .plus(sizeBN.times(oraclePrice))
+                  .minus(accountEquity)
+                  .div(sizeBN.minus(sizeBN.times(maintenanceMarginFraction)))
+              : otherPositionsRisk
+                  .plus(sizeBN.times(oraclePrice))
+                  .minus(accountEquity)
+                  .div(sizeBN.times(maintenanceMarginFraction).plus(sizeBN));
+         */
+        val denominator =
+            if (size > Numeric.double.ZERO) (size - size * maintenanceMarginFraction) else (size + size * maintenanceMarginFraction)
+
+        val liquidationPrice = if (denominator != Numeric.double.ZERO) {
+            (otherPositionsRisk + size * oraclePrice - equity) / denominator
+        } else {
+            null
         }
-        if (liquidationPrice != null && liquidationPrice!! < Numeric.double.ZERO) {
-            liquidationPrice = null
-        }
-        return liquidationPrice
+
+        return liquidationPrice?.takeUnless { it < Numeric.double.ZERO }
     }
 
     private fun calculationOtherPositionsRisk(
@@ -474,12 +477,9 @@ internal class SubaccountCalculator(val parser: ParserProtocol) {
     ) {
         for (period in periods) {
             val quoteBalance = parser.asDouble(value(subaccount, "quoteBalance", period))
-            if (quoteBalance != null) {
-                val equity =
-                    parser.asDouble(value(subaccount, "equity", period)) ?: Numeric.double.ZERO
-                val initialRiskTotal =
-                    parser.asDouble(value(subaccount, "initialRiskTotal", period))
-                        ?: Numeric.double.ZERO
+            val equity = parser.asDouble(value(subaccount, "equity", period))
+            val initialRiskTotal = parser.asDouble(value(subaccount, "initialRiskTotal", period))
+            if (quoteBalance != null && equity != null && initialRiskTotal != null) {
                 val imf =
                     parser.asDouble(configs?.get("initialMarginFraction"))
                         ?: parser.asDouble(0.05)!!

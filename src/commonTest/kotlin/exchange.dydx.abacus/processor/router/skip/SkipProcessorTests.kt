@@ -1,11 +1,17 @@
 package exchange.dydx.abacus.processor.router.skip
+import RpcConfigsProcessor
 import exchange.dydx.abacus.output.input.SelectionOption
 import exchange.dydx.abacus.output.input.TransferInputChainResource
 import exchange.dydx.abacus.output.input.TransferInputTokenResource
 import exchange.dydx.abacus.state.internalstate.InternalTransferInputState
+import exchange.dydx.abacus.state.manager.RpcConfigs
+import exchange.dydx.abacus.tests.payloads.RpcMock
 import exchange.dydx.abacus.tests.payloads.SkipChainsMock
 import exchange.dydx.abacus.tests.payloads.SkipRouteMock
 import exchange.dydx.abacus.tests.payloads.SkipTokensMock
+import exchange.dydx.abacus.tests.payloads.SkipVenuesMock
+import exchange.dydx.abacus.utils.DEFAULT_GAS_LIMIT
+import exchange.dydx.abacus.utils.DEFAULT_GAS_PRICE
 import exchange.dydx.abacus.utils.Parser
 import exchange.dydx.abacus.utils.toJsonObject
 import kotlinx.serialization.json.Json
@@ -22,12 +28,13 @@ class SkipProcessorTests {
 
     internal val internalState = InternalTransferInputState()
     internal val parser = Parser()
-    internal val skipProcessor = SkipProcessor(parser = parser, internalState = internalState)
+    internal val skipProcessor = SkipProcessor(parser = parser, internalState = internalState, staticTyping = false)
     internal val skipChainsMock = SkipChainsMock()
     internal val skipTokensMock = SkipTokensMock()
     internal val skipRouteMock = SkipRouteMock()
     internal val selectedChainId = "osmosis-1"
     internal val selectedTokenAddress = "selectedTokenDenom"
+    internal val selectedTokenSkipDenom = "selected-token-denom-native"
     internal val selectedTokenSymbol = "selectedTokenSymbol"
     internal val selectedTokenDecimals = "15"
     internal val selectedChainAssets = listOf(
@@ -35,6 +42,7 @@ class SkipProcessorTests {
             "denom" to selectedTokenAddress,
             "symbol" to selectedTokenSymbol,
             "decimals" to selectedTokenDecimals,
+            "skipDenom" to selectedTokenSkipDenom,
             "name" to "some-name",
             "logo_uri" to "some-logo-uri",
         ),
@@ -126,6 +134,13 @@ class SkipProcessorTests {
 
     @Test
     fun testSelectedTokenDecimals() {
+        val result = skipProcessor.selectedTokenDecimals(tokenAddress = selectedTokenSkipDenom, selectedChainId = selectedChainId)
+        val expected = selectedTokenDecimals
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun testSelectedTokenDecimalsUsingSkipDenom() {
         val result = skipProcessor.selectedTokenDecimals(tokenAddress = selectedTokenAddress, selectedChainId = selectedChainId)
         val expected = selectedTokenDecimals
         assertEquals(expected, result)
@@ -197,6 +212,11 @@ class SkipProcessorTests {
 
     @Test
     fun testReceivedChains() {
+        val testApiKey = "testApiKey"
+        assertEquals(0, RpcConfigs.chainRpcMap.size)
+        RpcConfigs.chainRpcMap = RpcConfigsProcessor(parser, testApiKey).received(RpcMock.json)
+        assertEquals(276, RpcConfigs.chainRpcMap.size)
+
         val payload = templateToMap(
             skipChainsMock.payload,
         )
@@ -205,17 +225,14 @@ class SkipProcessorTests {
             payload = payload,
         )
         val expectedChains = listOf(
+            SelectionOption(stringKey = "Arbitrum", string = "Arbitrum", type = "42161", iconUrl = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png"),
             SelectionOption(stringKey = "Ethereum", string = "Ethereum", type = "1", iconUrl = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png"),
-            SelectionOption(stringKey = "aura", string = "aura", type = "xstaxy-1", iconUrl = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xstaxy/chain.png"),
-            SelectionOption(stringKey = "cheqd", string = "cheqd", type = "cheqd-mainnet-1", iconUrl = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/cheqd-mainnet/chain.png"),
-            SelectionOption(stringKey = "kujira", string = "kujira", type = "kaiyo-1", iconUrl = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/kaiyo/chain.png"),
-            SelectionOption(stringKey = "osmosis", string = "osmosis", type = "osmosis-1", iconUrl = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png"),
-            SelectionOption(stringKey = "stride", string = "stride", type = "stride-1", iconUrl = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride/chain.png"),
         )
         val expectedChainResources = mapOf(
             "1" to TransferInputChainResource(
                 chainName = "Ethereum",
                 chainId = 1,
+                rpc = "https://eth-mainnet.g.alchemy.com/v2/$testApiKey",
                 iconUrl = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png",
             ),
         )
@@ -259,6 +276,12 @@ class SkipProcessorTests {
         )
         val expectedTokens = listOf(
             SelectionOption(
+                stringKey = "ZEthereum",
+                string = "ZEthereum",
+                type = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                iconUrl = "https://raw.githubusercontent.com/cosmos/chain-registry/master/_non-cosmos/ethereum/images/eth-blue.svg",
+            ),
+            SelectionOption(
                 stringKey = "Euro Coin",
                 string = "Euro Coin",
                 type = "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c",
@@ -279,7 +302,7 @@ class SkipProcessorTests {
         )
         val expectedModified = mapOf(
             "transfer" to mapOf(
-                "token" to "0x97e6E0a40a3D02F12d1cEC30ebfbAE04e37C119E",
+                "token" to "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                 "depositOptions" to mapOf(
                     "tokens" to expectedTokens,
                 ),
@@ -309,6 +332,13 @@ class SkipProcessorTests {
                 symbol = "UMEE",
                 decimals = 6,
                 iconUrl = "https://raw.githubusercontent.com/axelarnetwork/axelar-configs/main/images/tokens/umee.svg",
+            ),
+            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" to TransferInputTokenResource(
+                name = "ZEthereum",
+                address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                symbol = "ETH",
+                decimals = 18,
+                iconUrl = "https://raw.githubusercontent.com/cosmos/chain-registry/master/_non-cosmos/ethereum/images/eth-blue.svg",
             ),
         )
 
@@ -342,6 +372,8 @@ class SkipProcessorTests {
                         "fromAddress" to "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
                         "toChainId" to "noble-1",
                         "toAddress" to "uusdc",
+                        "gasPrice" to DEFAULT_GAS_PRICE,
+                        "gasLimit" to DEFAULT_GAS_LIMIT,
                     ),
                 ),
             ),
@@ -383,6 +415,57 @@ class SkipProcessorTests {
             ),
             "is_testnet" to false,
         ).toJsonObject()
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun receivedEvmSwapVenuesEvmSwaps() {
+        skipProcessor.receivedEvmSwapVenues(
+            existing = mapOf(),
+            payload = templateToMap(SkipVenuesMock.venues),
+        )
+
+        val result = internalState.evmSwapVenues
+
+        val expected =
+            listOf(
+                mapOf(
+                    "name" to "ethereum-uniswap",
+                    "chain_id" to "1",
+                ),
+                mapOf(
+                    "name" to "binance-uniswap",
+                    "chain_id" to "56",
+                ),
+                mapOf(
+                    "name" to "polygon-uniswap",
+                    "chain_id" to "137",
+                ),
+                mapOf(
+                    "name" to "optimism-uniswap",
+                    "chain_id" to "10",
+                ),
+                mapOf(
+                    "name" to "arbitrum-uniswap",
+                    "chain_id" to "42161",
+                ),
+                mapOf(
+                    "name" to "base-uniswap",
+                    "chain_id" to "8453",
+                ),
+                mapOf(
+                    "name" to "celo-uniswap",
+                    "chain_id" to "42220",
+                ),
+                mapOf(
+                    "name" to "avalanche-uniswap",
+                    "chain_id" to "43114",
+                ),
+                mapOf(
+                    "name" to "blast-uniswap",
+                    "chain_id" to "81457",
+                ),
+            )
         assertEquals(expected, result)
     }
 }

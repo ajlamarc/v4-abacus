@@ -43,6 +43,7 @@ data class MarketsConfigs(
     val subscribeToOrderbook: Boolean,
     val subscribeToTrades: Boolean,
     val subscribeToCandles: Boolean,
+    val retrieveSevenDaySparkline: Boolean,
 ) {
     companion object {
         val forApp = MarketsConfigs(
@@ -53,6 +54,7 @@ data class MarketsConfigs(
             subscribeToOrderbook = true,
             subscribeToTrades = true,
             subscribeToCandles = true,
+            retrieveSevenDaySparkline = true,
         )
         val forWeb = MarketsConfigs(
             retrieveSparklines = true,
@@ -62,6 +64,7 @@ data class MarketsConfigs(
             subscribeToOrderbook = true,
             subscribeToTrades = true,
             subscribeToCandles = false,
+            retrieveSevenDaySparkline = false,
         )
         val forProgrammaticTraders = MarketsConfigs(
             retrieveSparklines = false,
@@ -71,14 +74,9 @@ data class MarketsConfigs(
             subscribeToOrderbook = true,
             subscribeToTrades = false,
             subscribeToCandles = false,
+            retrieveSevenDaySparkline = false,
         )
     }
-}
-
-enum class SubaccountSubscriptionType {
-    SUBACCOUNT,
-    PARENT_SUBACCOUNT,
-    NONE,
 }
 
 @JsExport
@@ -88,6 +86,13 @@ data class SubaccountConfigs(
     val retrieveHistoricalPnls: Boolean,
     val subscribeToSubaccount: Boolean,
     val useParentSubaccount: Boolean,
+    var notifications: List<NotificationProviderType> =
+        listOf(
+            NotificationProviderType.BlockReward,
+            NotificationProviderType.Fills,
+            NotificationProviderType.OrderStatusChange,
+            NotificationProviderType.Positions,
+        ),
 ) {
     companion object {
         val forApp = SubaccountConfigs(
@@ -169,14 +174,7 @@ data class OnboardingConfigs(
         V2WithdrawalOnly,
     }
 
-    var squidVersion: SquidVersion = SquidVersion.V2
-
-    enum class RouterVendor {
-        Squid,
-        Skip
-    }
-
-    var routerVendor: RouterVendor = RouterVendor.Squid
+    var alchemyApiKey: String? = null
 
     companion object {
         val forApp = OnboardingConfigs(
@@ -189,14 +187,41 @@ data class OnboardingConfigs(
 }
 
 @JsExport
+data class VaultConfigs(
+    val retrieveVault: Boolean,
+) {
+    companion object {
+        val forApp = VaultConfigs(
+            retrieveVault = true,
+        )
+        val forWeb = VaultConfigs(
+            retrieveVault = false,
+        )
+        val forProgrammaticTraders = VaultConfigs(
+            retrieveVault = false,
+        )
+    }
+}
+
+@JsExport
+enum class NotificationProviderType {
+    BlockReward,
+    Fills,
+    OrderStatusChange,
+    Positions
+}
+
+@JsExport
 data class AppConfigsV2(
     val systemConfigs: SystemConfigs,
     val marketConfigs: MarketsConfigs,
     val accountConfigs: AccountConfigs,
     var onboardingConfigs: OnboardingConfigs,
+    var vaultConfigs: VaultConfigs,
     var loadRemote: Boolean = true,
     var enableLogger: Boolean = false,
     var triggerOrderToast: Boolean = false,
+    var staticTyping: Boolean = false,
 ) {
     companion object {
         val forApp = AppConfigsV2(
@@ -204,6 +229,7 @@ data class AppConfigsV2(
             marketConfigs = MarketsConfigs.forApp,
             accountConfigs = AccountConfigs.forApp,
             onboardingConfigs = OnboardingConfigs.forApp,
+            vaultConfigs = VaultConfigs.forApp,
             loadRemote = true,
             triggerOrderToast = true,
         )
@@ -212,14 +238,16 @@ data class AppConfigsV2(
             marketConfigs = MarketsConfigs.forApp,
             accountConfigs = AccountConfigs.forAppWithIsolatedMargins,
             onboardingConfigs = OnboardingConfigs.forApp,
+            vaultConfigs = VaultConfigs.forApp,
             loadRemote = true,
             triggerOrderToast = true,
         )
         val forAppDebug = AppConfigsV2(
             systemConfigs = SystemConfigs.forApp,
             marketConfigs = MarketsConfigs.forApp,
-            accountConfigs = AccountConfigs.forApp,
+            accountConfigs = AccountConfigs.forAppWithIsolatedMargins,
             onboardingConfigs = OnboardingConfigs.forApp,
+            vaultConfigs = VaultConfigs.forApp,
             loadRemote = false,
             enableLogger = true,
             triggerOrderToast = true,
@@ -229,6 +257,7 @@ data class AppConfigsV2(
             marketConfigs = MarketsConfigs.forWeb,
             accountConfigs = AccountConfigs.forApp,
             onboardingConfigs = OnboardingConfigs.forApp,
+            vaultConfigs = VaultConfigs.forWeb,
             loadRemote = true,
             triggerOrderToast = false,
         )
@@ -237,6 +266,7 @@ data class AppConfigsV2(
             marketConfigs = MarketsConfigs.forWeb,
             accountConfigs = AccountConfigs.forAppWithIsolatedMargins,
             onboardingConfigs = OnboardingConfigs.forApp,
+            vaultConfigs = VaultConfigs.forWeb,
             loadRemote = true,
             triggerOrderToast = false,
             enableLogger = true,
@@ -246,6 +276,7 @@ data class AppConfigsV2(
             marketConfigs = MarketsConfigs.forProgrammaticTraders,
             accountConfigs = AccountConfigs.forProgrammaticTraders,
             onboardingConfigs = OnboardingConfigs.forProgrammaticTraders,
+            vaultConfigs = VaultConfigs.forProgrammaticTraders,
             loadRemote = true,
             triggerOrderToast = false,
         )

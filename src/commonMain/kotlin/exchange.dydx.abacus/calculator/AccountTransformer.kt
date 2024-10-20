@@ -16,7 +16,7 @@ class AccountTransformer() {
     ): Map<String, Any>? {
         val modified = account?.mutable() ?: return null
         val childSubaccountNumber =
-            MarginCalculator.getChildSubaccountNumberForIsolatedMarginTrade(
+            MarginCalculator.getChildSubaccountNumberForIsolatedMarginTradeDeprecated(
                 parser,
                 account,
                 subaccountNumber ?: 0,
@@ -40,7 +40,7 @@ class AccountTransformer() {
                 )
             modified.safeSet("subaccounts.$subaccountNumber", modifiedSubaccount)
             return modified
-        } else {
+        } else if (childSubaccountNumber != null) {
             val childSubaccount = parser.asNativeMap(
                 parser.value(
                     account,
@@ -48,42 +48,44 @@ class AccountTransformer() {
                 ),
             ) ?: mapOf()
 
-            val transferAmount = if (MarginCalculator.getShouldTransferCollateral(
-                    parser,
-                    subaccount = childSubaccount,
-                    tradeInput = trade,
-                )
-            ) {
-                MarginCalculator.calculateIsolatedMarginTransferAmount(
-                    parser,
-                    trade,
-                    market,
-                    subaccount = childSubaccount,
-                ) ?: 0.0
-            } else {
-                0.0
+            var transferAmountAppliedToParent = 0.0
+            var transferAmountAppliedToChild = 0.0
+
+            val shouldTransferCollateralToChild = MarginCalculator.getShouldTransferInCollateralDeprecated(parser, subaccount = childSubaccount, trade)
+            val shouldTransferOutRemainingCollateralFromChild = MarginCalculator.getShouldTransferOutRemainingCollateralDeprecated(parser, subaccount = childSubaccount, trade)
+
+            if (shouldTransferCollateralToChild) {
+                val transferAmount = MarginCalculator.calculateIsolatedMarginTransferAmountDeprecated(parser, trade, market, subaccount = childSubaccount) ?: 0.0
+                transferAmountAppliedToParent = transferAmount * -1
+                transferAmountAppliedToChild = transferAmount
+            } else if (shouldTransferOutRemainingCollateralFromChild) {
+                val remainingCollateral = MarginCalculator.getEstimateRemainingCollateralAfterClosePositionDeprecated(parser, subaccount = childSubaccount, trade) ?: 0.0
+                transferAmountAppliedToParent = remainingCollateral
             }
 
-            val modifiedSubaccount =
-                subaccountTransformer.applyTransferToSubaccount(
-                    subaccount,
-                    transferAmount * -1.0,
-                    parser,
-                    period,
-                )
-            modified.safeSet("subaccounts.$subaccountNumber", modifiedSubaccount)
+            val modifiedParentSubaccount = subaccountTransformer.applyTransferToSubaccount(
+                subaccount,
+                transfer = transferAmountAppliedToParent,
+                parser,
+                period,
+            )
+            modified.safeSet("subaccounts.$subaccountNumber", modifiedParentSubaccount)
 
-            val modifiedChildSubaccount =
-                subaccountTransformer.applyTradeToSubaccount(
-                    childSubaccount,
-                    trade,
-                    market,
-                    parser,
-                    period,
-                    transferAmount,
-                )
+            // when transfer out is true, post order position margin should be null
+            val modifiedChildSubaccount = subaccountTransformer.applyTradeToSubaccount(
+                childSubaccount,
+                trade,
+                market,
+                parser,
+                period,
+                transferAmountAppliedToChild,
+                isTransferOut = shouldTransferOutRemainingCollateralFromChild,
+            )
             modified.safeSet("subaccounts.$childSubaccountNumber", modifiedChildSubaccount)
+
             return modified
         }
+
+        return modified
     }
 }

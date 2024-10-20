@@ -56,6 +56,7 @@ class TriggerOrderToastGeneratorTests {
                         "side": "Buy",
                         "status": "Untriggered",
                         "marketId": "ETH-USD",
+                        "displayId": "ETH-USD",
                         "price": 1000,
                         "triggerPrice": 2000,
                         "size": 1,
@@ -70,6 +71,7 @@ class TriggerOrderToastGeneratorTests {
                     {
                         "id": "ETH-USD",
                         "assetId": "assetId",
+                        "displayId": "ETH-USD",
                         "side": {
                             "current": "SHORT"
                         },
@@ -138,7 +140,7 @@ class TriggerOrderToastGeneratorTests {
                 cancelOrderPayloads = iListOf(
                     HumanReadableCancelOrderPayload(
                         subaccountNumber = 0,
-                        clientId = 0,
+                        clientId = "0",
                         type = "TAKE_PROFIT",
                         orderId = "existingOrderId",
                         orderFlags = SHORT_TERM_ORDER_FLAGS,
@@ -151,12 +153,13 @@ class TriggerOrderToastGeneratorTests {
                     HumanReadablePlaceOrderPayload(
                         subaccountNumber = 0,
                         marketId = "ETH-USD",
-                        clientId = 0,
+                        clientId = "0",
                         type = "STOP_LIMIT",
                         side = "buy",
                         price = 1000.0,
                         triggerPrice = 1500.0,
                         size = 1.0,
+                        sizeInput = null,
                         postOnly = false,
                         reduceOnly = false,
                         timeInForce = null,
@@ -173,12 +176,12 @@ class TriggerOrderToastGeneratorTests {
         // one cancel and one place order
         assertEquals(presentation.showToastCallCount, 2)
 
-        val cancel = presentation.toasts[0]!!
+        val cancel = presentation.toasts[0]
         assertTrue { cancel.title.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVING.TITLE") }
         assertTrue { cancel.text!!.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVING.BODY") }
         assertTrue { cancel.text!!.contains("2000") }
 
-        val placeOrder = presentation.toasts[1]!!
+        val placeOrder = presentation.toasts[1]
         assertTrue { placeOrder.title.contains("NOTIFICATIONS.STOP_LOSS_TRIGGER_CREATING.TITLE") }
         assertTrue { placeOrder.text!!.contains("NOTIFICATIONS.STOP_LOSS_TRIGGER_CREATING.BODY") }
         assertTrue { placeOrder.text!!.contains("1500") }
@@ -209,7 +212,7 @@ class TriggerOrderToastGeneratorTests {
                 cancelOrderPayloads = iListOf(
                     HumanReadableCancelOrderPayload(
                         subaccountNumber = 0,
-                        clientId = 0,
+                        clientId = "0",
                         type = "TAKE_PROFIT",
                         orderId = "existingOrderId",
                         orderFlags = SHORT_TERM_ORDER_FLAGS,
@@ -223,7 +226,7 @@ class TriggerOrderToastGeneratorTests {
         )
         assertEquals(presentation.showToastCallCount, 1)
 
-        val cancel = presentation.toasts[0]!!
+        val cancel = presentation.toasts[0]
         assertTrue { cancel.title.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVED.TITLE") }
         assertTrue { cancel.text!!.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVED.BODY") }
         assertTrue { cancel.text!!.contains("2000") }
@@ -241,12 +244,13 @@ class TriggerOrderToastGeneratorTests {
                     HumanReadablePlaceOrderPayload(
                         subaccountNumber = 0,
                         marketId = "ETH-USD",
-                        clientId = 0,
+                        clientId = "0",
                         type = "TAKE_PROFIT_MARKET",
                         side = "buy",
                         price = 1000.0,
                         triggerPrice = 3000.0,
                         size = 1.0,
+                        sizeInput = null,
                         postOnly = false,
                         reduceOnly = false,
                         timeInForce = null,
@@ -261,7 +265,7 @@ class TriggerOrderToastGeneratorTests {
         )
         assertEquals(presentation.showToastCallCount, 2)
 
-        val placeOrder = presentation.toasts[1]!!
+        val placeOrder = presentation.toasts[1]
         assertTrue { placeOrder.title.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_CREATED.TITLE") }
         assertTrue { placeOrder.text!!.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_CREATED.BODY") }
         assertTrue { placeOrder.text!!.contains("3000") }
@@ -294,7 +298,7 @@ class TriggerOrderToastGeneratorTests {
                     HumanReadableCancelOrderPayload(
                         subaccountNumber = 0,
                         type = "TAKE_PROFIT",
-                        clientId = 0,
+                        clientId = "0",
                         orderId = "existingOrderId",
                         orderFlags = SHORT_TERM_ORDER_FLAGS,
                         clobPairId = 0,
@@ -307,7 +311,7 @@ class TriggerOrderToastGeneratorTests {
         )
         assertEquals(presentation.showToastCallCount, 1)
 
-        val cancelFailed = presentation.toasts[0]!!
+        val cancelFailed = presentation.toasts[0]
         assertTrue { cancelFailed.title.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVING_ERROR.TITLE") }
         assertTrue { cancelFailed.text!!.contains("NOTIFICATIONS.TAKE_PROFIT_TRIGGER_REMOVING_ERROR.BODY") }
         assertTrue { cancelFailed.text!!.contains("2000") }

@@ -2,8 +2,11 @@ package exchange.dydx.abacus.processor.router.skip
 
 import exchange.dydx.abacus.processor.base.BaseProcessor
 import exchange.dydx.abacus.protocols.ParserProtocol
+import exchange.dydx.abacus.state.manager.StatsigConfig
 import exchange.dydx.abacus.utils.SLIPPAGE_PERCENT
 import exchange.dydx.abacus.utils.safeSet
+import exchange.dydx.abacus.utils.toJson
+import exchange.dydx.abacus.utils.toJsonArray
 import kotlin.math.pow
 
 @Suppress("ForbiddenComment")
@@ -13,7 +16,8 @@ internal class SkipRouteProcessor(internal val parser: ParserProtocol) {
             "route.usd_amount_out" to "toAmountUSD",
             "route.estimated_amount_out" to "toAmount",
             "route.swap_price_impact_percent" to "aggregatePriceImpact",
-
+            "route.warning" to "warning",
+            "route.estimated_route_duration_seconds" to "estimatedRouteDurationSeconds",
 //            SQUID PARAMS THAT ARE NOW DEPRECATED:
 //            "route.estimate.gasCosts.0.amountUSD" to "gasFee",
 //            "route.estimate.exchangeRate" to "exchangeRate",
@@ -68,6 +72,8 @@ internal class SkipRouteProcessor(internal val parser: ParserProtocol) {
     ): Map<String, Any> {
         val modified = BaseProcessor(parser).transform(existing, payload, keyMap)
 
+        modified.safeSet("estimatedRouteDurationSeconds", parser.value(payload, "route.estimated_route_duration_seconds"))
+
         var bridgeFees = findFee(payload, "BRIDGE") ?: 0.0
 //        TODO: update web UI to show smart relay fees
 //        For now we're just bundling it with the bridge fees
@@ -100,11 +106,22 @@ internal class SkipRouteProcessor(internal val parser: ParserProtocol) {
 //        this allows to match the current errors format.
 //        TODO: replace errors with errorMessage once we finish migration
         if (errorCode != null) {
-            modified.safeSet("errors", parser.asString(listOf(payload)))
+            modified.safeSet("errors", parser.asString(listOf(payload).toJsonArray()))
         } else {
 //          Only bother processing payload if there's no error
             val payloadProcessor = SkipRoutePayloadProcessor(parser)
             modified.safeSet("requestPayload", payloadProcessor.received(null, payload))
+        }
+
+        if (modified.get("warning") == null && bridgeFees > StatsigConfig.dc_max_safe_bridge_fees) {
+            val fromAmountUSD = parser.asString(parser.value(payload, "route.usd_amount_in"))
+            modified.safeSet(
+                "warning",
+                mapOf(
+                    "type" to "BAD_PRICE_WARNING",
+                    "message" to "Difference in USD value of route input and output is large ($bridgeFees). Input USD Value: $fromAmountUSD Output USD value: $toAmountUSD",
+                ).toJson(),
+            )
         }
         return modified
     }

@@ -28,12 +28,18 @@ class V4StateManagerConfigs(
                          "screen":"/v4/screen",
                          "complianceScreen":"/v4/compliance/screen",
                          "complianceGeoblock":"/v4/compliance/geoblock",
-                         "height":"/v4/height"
+                         "complianceGeoblockKeplr":"/v4/compliance/geoblock-keplr",
+                         "height":"/v4/height",
+                         "vaultPositions":"/v4/vault/v1/megavault/positions",
+                         "vaultHistoricalPnl":"/v4/vault/v1/megavault/historicalPnl",
+                         "vaultMarketPnls":"/v4/vault/v1/vaults/historicalPnl",
+                         "transfers":"/v4/transfers/between"
                       },
                       "private":{
                          "account":"/v4/addresses",
                          "fills":"/v4/fills",
                          "historical-pnl":"/v4/historical-pnl",
+                         "parent-historical-pnl":"/v4/historical-pnl/parentSubaccountNumber",
                          "transfers":"/v4/transfers",
                          "historicalTradingRewardAggregations":"/v4/historicalTradingRewardAggregations",
                          "parent-fills":"/v4/fills/parentSubaccountNumber",
@@ -114,18 +120,37 @@ class V4StateManagerConfigs(
     }
 
     fun skipV1Chains(): String {
-        return "$skipHost/v2/info/chains?include_evm=true$onlyTestnets"
+        return "$skipHost/v2/info/chains?include_evm=true$includeSvmChains$onlyTestnets"
     }
 
     fun skipV1Assets(): String {
-        return "$skipHost/v2/fungible/assets?include_evm_assets=true$onlyTestnets"
+        return "$skipHost/v2/fungible/assets?include_evm_assets=true$includeSvmAssets$onlyTestnets"
     }
 
     fun skipV2MsgsDirect(): String {
         return "$skipHost/v2/fungible/msgs_direct"
     }
 
+    fun skipV2Track(): String {
+        return "$skipHost/v2/tx/track"
+    }
+
+    fun skipV2Status(): String {
+        return "$skipHost/v2/tx/status"
+    }
+
+    val skipV2Venues = "$skipHost/v2/fungible/venues"
+
     val nobleDenom = "uusdc"
+
+    private val includeSvmChains: String
+        get() {
+            return "&include_svm=true"
+        }
+    private val includeSvmAssets: String
+        get() {
+            return "&include_svm_assets=true"
+        }
 
     private val onlyTestnets: String
         get() {
@@ -134,7 +159,7 @@ class V4StateManagerConfigs(
 
     private val skipHost: String
         get() {
-            return "https://api.skip.money"
+            return environment.endpoints.skip ?: "https://api.skip.money"
         }
 
     private val squidV2Host: String

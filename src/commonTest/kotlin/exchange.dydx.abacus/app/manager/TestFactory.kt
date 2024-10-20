@@ -2,7 +2,7 @@ package exchange.dydx.abacus.app.manager
 
 import exchange.dydx.abacus.output.Notification
 import exchange.dydx.abacus.output.PerpetualState
-import exchange.dydx.abacus.output.SubaccountOrder
+import exchange.dydx.abacus.output.account.SubaccountOrder
 import exchange.dydx.abacus.protocols.DYDXChainTransactionsProtocol
 import exchange.dydx.abacus.protocols.FileLocation
 import exchange.dydx.abacus.protocols.FileSystemProtocol
@@ -297,13 +297,16 @@ class TestChain : DYDXChainTransactionsProtocol {
     var heightResponse: String? = null
     var placeOrderResponse: String? = null
     var cancelOrderResponse: String? = null
+    var transferResponse: String? = null
     var depositResponse: String? = null
     var withdrawResponse: String? = null
     var signCompliancePayload: String? = null
 
     var transactionCallback: ((response: String?) -> Unit)? = null
 
+    var placeOrderPayloads = mutableListOf<String>()
     var canceldOrderPayloads = mutableListOf<String>()
+    var transferPayloads = mutableListOf<String>()
 
     var requests = mutableListOf<QueryType>()
 
@@ -356,6 +359,11 @@ class TestChain : DYDXChainTransactionsProtocol {
             TransactionType.CancelOrder -> {
                 cancelOrder(paramsInJson!!, callback)
             }
+
+            TransactionType.SubaccountTransfer -> {
+                transfer(paramsInJson!!, callback)
+            }
+
             TransactionType.Deposit -> {
                 deposit(paramsInJson!!, callback)
             }
@@ -386,6 +394,7 @@ class TestChain : DYDXChainTransactionsProtocol {
     }
 
     fun placeOrder(json: String, callback: (response: String?) -> Unit) {
+        placeOrderPayloads.add(json)
         if (placeOrderResponse != null) {
             callback(placeOrderResponse)
         } else {
@@ -397,6 +406,15 @@ class TestChain : DYDXChainTransactionsProtocol {
         canceldOrderPayloads.add(json)
         if (cancelOrderResponse != null) {
             callback(cancelOrderResponse)
+        } else {
+            this.transactionCallback = callback
+        }
+    }
+
+    fun transfer(json: String, callback: (response: String?) -> Unit) {
+        transferPayloads.add(json)
+        if (transferResponse != null) {
+            callback(transferResponse)
         } else {
             this.transactionCallback = callback
         }

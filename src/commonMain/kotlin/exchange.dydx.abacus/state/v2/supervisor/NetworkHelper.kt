@@ -25,17 +25,21 @@ import exchange.dydx.abacus.utils.JsonEncoder
 import exchange.dydx.abacus.utils.ParsingHelper
 import exchange.dydx.abacus.utils.ServerTime
 import exchange.dydx.abacus.utils.UIImplementations
+import exchange.dydx.abacus.utils.iMapOf
 import kollections.iListOf
 import kollections.iSetOf
 import kollections.toIMap
 import kollections.toISet
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.times
 
 typealias RestCallbackWithUrl = (url: String, response: String?, httpCode: Int, headers: Map<String, Any>?) -> Unit
+data class RestResult(val response: String?, val error: String?)
 
 class NetworkHelper(
     internal val deploymentUri: String,
@@ -64,10 +68,10 @@ class NetworkHelper(
     private var restRetryTimers: MutableMap<String, LocalTimerProtocol> =
         exchange.dydx.abacus.utils.mutableMapOf()
 
-    internal fun retrieveTimed(
+    internal fun <T> retrieveTimed(
         url: String,
-        items: List<Any>?,
-        timeField: String,
+        items: List<T>?,
+        timeField: (T?) -> Instant?,
         sampleDuration: Duration,
         maxDuration: Duration,
         beforeParam: String,
@@ -77,22 +81,16 @@ class NetworkHelper(
         callback: RestCallbackWithUrl,
     ) {
         if (items != null) {
-            val lastItemTime =
-                parser.asDatetime(
-                    parser.asMap(items.lastOrNull())?.get(timeField),
-                )
-            val firstItemTime =
-                parser.asDatetime(
-                    parser.asMap(items.firstOrNull())?.get(timeField),
-                )
+            val lastItemTime = timeField(items.lastOrNull())
+            val firstItemTime = timeField(items.firstOrNull())
             val now = ServerTime.now()
 
             var latestItemTime: Instant? = null
             var earliestItemTime: Instant? = null
 
             if (lastItemTime != null && firstItemTime != null) {
-                latestItemTime = if (lastItemTime.compareTo(firstItemTime) > 0) lastItemTime else firstItemTime
-                earliestItemTime = if (lastItemTime.compareTo(firstItemTime) < 0) lastItemTime else firstItemTime
+                latestItemTime = if (lastItemTime > firstItemTime) lastItemTime else firstItemTime
+                earliestItemTime = if (lastItemTime < firstItemTime) lastItemTime else firstItemTime
             }
 
             if (latestItemTime != null && (now.minus(latestItemTime)) > sampleDuration * 2.0) {
@@ -173,6 +171,22 @@ class NetworkHelper(
         val fullUrl = fullUrl(url, params)
 
         getWithFullUrl(fullUrl, headers, callback)
+    }
+
+    suspend fun getAsync(
+        url: String,
+        params: Map<String, String>? = null,
+        headers: Map<String, String>? = null,
+    ): RestResult {
+        return suspendCoroutine { continuation ->
+            get(url, params, headers) { _, response, httpCode, _ ->
+                if (success(httpCode)) {
+                    continuation.resume(RestResult(response, null))
+                } else {
+                    continuation.resume(RestResult(null, response ?: "Unknown error"))
+                }
+            }
+        }
     }
 
     private fun fullUrl(
@@ -541,5 +555,17 @@ class NetworkHelper(
                 callback(true, null, data)
             }
         }
+    }
+
+    internal fun apiStateParams(): IMap<String, Any>? {
+        val indexerTime = lastIndexerCallTime?.toEpochMilliseconds()
+        val validatorTime = lastValidatorCallTime?.toEpochMilliseconds()
+        val interval = indexerTime?.let { Clock.System.now().toEpochMilliseconds() - it }
+        return iMapOf(
+            "lastSuccessfulIndexerRPC" to indexerTime?.toDouble(),
+            "lastSuccessfulFullNodeRPC" to validatorTime?.toDouble(),
+            "elapsedTime" to interval?.toDouble(),
+            "validatorUrl" to validatorUrl,
+        ) as IMap<String, Any>?
     }
 }

@@ -1,14 +1,54 @@
 package exchange.dydx.abacus.processor.wallet.account
 
+import exchange.dydx.abacus.output.account.SubaccountOrder
 import exchange.dydx.abacus.processor.base.BaseProcessor
+import exchange.dydx.abacus.processor.base.mergeWithIds
+import exchange.dydx.abacus.protocols.LocalizerProtocol
 import exchange.dydx.abacus.protocols.ParserProtocol
 import exchange.dydx.abacus.state.manager.BlockAndTime
+import exchange.dydx.abacus.utils.SHORT_TERM_ORDER_DURATION
 import exchange.dydx.abacus.utils.mutable
 import exchange.dydx.abacus.utils.safeSet
 import exchange.dydx.abacus.utils.typedSafeSet
+import indexer.models.IndexerCompositeOrderObject
 
-internal class OrdersProcessor(parser: ParserProtocol) : BaseProcessor(parser) {
-    private var itemProcessor = OrderProcessor(parser = parser)
+internal class OrdersProcessor(
+    parser: ParserProtocol,
+    localizer: LocalizerProtocol?,
+    private val orderProcessor: OrderProcessorProtocol = OrderProcessor(parser = parser, localizer = localizer),
+) : BaseProcessor(parser) {
+
+    private val itemProcessor: OrderProcessor? = orderProcessor as? OrderProcessor
+
+    fun process(
+        existing: List<SubaccountOrder>?,
+        payload: List<IndexerCompositeOrderObject>,
+        height: BlockAndTime?,
+        subaccountNumber: Int
+    ): List<SubaccountOrder> {
+        val new = payload.mapNotNull { eachPayload ->
+            val orderId = eachPayload.id ?: eachPayload.clientId
+            orderProcessor.process(
+                existing = existing?.find { it.id == orderId },
+                payload = eachPayload,
+                subaccountNumber = subaccountNumber,
+                height = height,
+            )
+        }
+        val merged = existing?.let {
+            mergeWithIds(new, existing) { item -> item.id }
+        } ?: new
+
+        return merged.sortedBy { block(it) }.reversed()
+    }
+
+    private fun block(order: SubaccountOrder): Int? {
+        return order.createdAtHeight ?: if (order.goodTilBlock != null) {
+            order.goodTilBlock - SHORT_TERM_ORDER_DURATION
+        } else {
+            null
+        }
+    }
 
     internal fun received(
         existing: Map<String, Any>?,
@@ -30,7 +70,7 @@ internal class OrdersProcessor(parser: ParserProtocol) : BaseProcessor(parser) {
 
                     if (orderId != null) {
                         val existing = parser.asNativeMap(orders[orderId])
-                        val order = itemProcessor.received(existing, modified, height)
+                        val order = itemProcessor?.received(existing, modified, height)
                         orders.typedSafeSet(orderId, order)
                     }
                 }
@@ -42,7 +82,20 @@ internal class OrdersProcessor(parser: ParserProtocol) : BaseProcessor(parser) {
         }
     }
 
-    internal fun updateHeight(
+    fun updateHeight(
+        existing: List<SubaccountOrder>?,
+        height: BlockAndTime?
+    ): Pair<List<SubaccountOrder>?, Boolean> {
+        var updated = false
+        val modified = existing?.map { order ->
+            val (modifiedOrder, orderUpdated) = itemProcessor?.updateHeight(order, height) ?: Pair(order, false)
+            updated = updated || orderUpdated
+            modifiedOrder
+        }
+        return Pair(modified, updated)
+    }
+
+    internal fun updateHeightDeprecated(
         existing: Map<String, Any>,
         height: BlockAndTime?
     ): Pair<Map<String, Any>, Boolean> {
@@ -50,8 +103,8 @@ internal class OrdersProcessor(parser: ParserProtocol) : BaseProcessor(parser) {
         val modified = existing.mutable()
         for ((key, item) in existing) {
             val order = parser.asNativeMap(item)
-            if (order != null) {
-                val (modifiedOrder, orderUpdated) = itemProcessor.updateHeight(order, height)
+            if (order != null && itemProcessor != null) {
+                val (modifiedOrder, orderUpdated) = itemProcessor.updateHeightDeprecated(order, height)
                 if (orderUpdated) {
                     modified[key] = modifiedOrder
                     updated = orderUpdated
@@ -62,14 +115,29 @@ internal class OrdersProcessor(parser: ParserProtocol) : BaseProcessor(parser) {
         return Pair(modified, updated)
     }
 
-    internal fun canceled(
+    fun canceled(
+        existing: List<SubaccountOrder>?,
+        orderId: String,
+    ): Pair<List<SubaccountOrder>?, Boolean> {
+        val order = existing?.find { it.id == orderId }
+        if (order != null && itemProcessor != null) {
+            val modifiedItem = itemProcessor.canceled(order)
+            val modified = existing.toMutableList()
+            modified[existing.indexOf(order)] = modifiedItem
+            return Pair(modified, true)
+        } else {
+            return Pair(existing, false)
+        }
+    }
+
+    internal fun canceledDeprecated(
         existing: Map<String, Any>,
         orderId: String,
     ): Pair<Map<String, Any>, Boolean> {
         val order = parser.asNativeMap(existing.get(orderId))
         return if (order != null) {
             val modified = existing.mutable()
-            itemProcessor.canceled(order)
+            itemProcessor?.canceledDeprecated(order)
             modified.typedSafeSet(orderId, order)
             Pair(modified, true)
         } else {

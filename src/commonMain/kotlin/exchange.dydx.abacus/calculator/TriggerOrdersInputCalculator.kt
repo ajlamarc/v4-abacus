@@ -1,6 +1,7 @@
 package exchange.dydx.abacus.calculator
 
 import abs
+import exchange.dydx.abacus.calculator.SlippageConstants.MAJOR_MARKETS
 import exchange.dydx.abacus.calculator.SlippageConstants.STOP_MARKET_ORDER_SLIPPAGE_BUFFER
 import exchange.dydx.abacus.calculator.SlippageConstants.STOP_MARKET_ORDER_SLIPPAGE_BUFFER_MAJOR_MARKET
 import exchange.dydx.abacus.calculator.SlippageConstants.TAKE_PROFIT_MARKET_ORDER_SLIPPAGE_BUFFER
@@ -45,12 +46,12 @@ internal class TriggerOrdersInputCalculator(val parser: ParserProtocol) {
         return if (triggerOrders != null && position != null) {
             val modified = state.mutable()
             val modifiedStopLossOrder = if (stopLossOrder != null) {
-                calculateTriggerOrderTrade(stopLossOrder, position, inputSize)
+                calculateTriggerOrderTrade(stopLossOrder, position, inputSize, marketId)
             } else {
                 stopLossOrder
             }
             val modifiedTakeProfitOrder = if (takeProfitOrder != null) {
-                calculateTriggerOrderTrade(takeProfitOrder, position, inputSize)
+                calculateTriggerOrderTrade(takeProfitOrder, position, inputSize, marketId)
             } else {
                 takeProfitOrder
             }
@@ -69,6 +70,7 @@ internal class TriggerOrdersInputCalculator(val parser: ParserProtocol) {
         triggerOrder: Map<String, Any>,
         position: Map<String, Any>,
         inputSize: Double?,
+        marketId: String?,
     ): Map<String, Any> {
         val modified = triggerOrder.mutable()
         val orderSize = parser.asDouble(triggerOrder["size"])
@@ -76,7 +78,7 @@ internal class TriggerOrdersInputCalculator(val parser: ParserProtocol) {
         val triggerPrices = parser.asNativeMap(triggerOrder["price"])?.let { calculateTriggerPrices(it, position, absSize) }
         modified.safeSet("price", triggerPrices)
 
-        return finalizeOrderFromPriceInputs(modified, position, absSize)
+        return finalizeOrderFromPriceInputs(modified, position, absSize, marketId)
     }
 
     private fun calculateTriggerPrices(
@@ -270,7 +272,12 @@ internal class TriggerOrdersInputCalculator(val parser: ParserProtocol) {
         return modified
     }
 
-    private fun finalizeOrderFromPriceInputs(triggerOrder: Map<String, Any>, position: Map<String, Any>, size: Double?): MutableMap<String, Any> {
+    private fun finalizeOrderFromPriceInputs(
+        triggerOrder: Map<String, Any>,
+        position: Map<String, Any>,
+        size: Double?,
+        marketId: String?
+    ): MutableMap<String, Any> {
         val modified = triggerOrder.mutable()
 
         val side = getOrderSide(position)
@@ -283,10 +290,7 @@ internal class TriggerOrdersInputCalculator(val parser: ParserProtocol) {
             OrderType.TakeProfitMarket, OrderType.StopMarket -> {
                 val triggerPrice =
                     parser.asDouble(parser.value(triggerOrder, "price.triggerPrice"))
-                val majorMarket = when (parser.asString(triggerOrder["marketId"])) {
-                    "BTC-USD", "ETH-USD" -> true
-                    else -> false
-                }
+                val majorMarket = MAJOR_MARKETS.contains(marketId)
                 val slippagePercentage = if (majorMarket) {
                     if (type == OrderType.StopMarket) {
                         STOP_MARKET_ORDER_SLIPPAGE_BUFFER_MAJOR_MARKET

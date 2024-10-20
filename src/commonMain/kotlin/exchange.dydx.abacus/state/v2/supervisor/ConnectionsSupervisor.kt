@@ -7,12 +7,14 @@ import exchange.dydx.abacus.protocols.TransactionType
 import exchange.dydx.abacus.state.manager.GasToken
 import exchange.dydx.abacus.state.manager.IndexerURIs
 import exchange.dydx.abacus.state.manager.NetworkState
+import exchange.dydx.abacus.state.manager.StatsigConfig
 import exchange.dydx.abacus.state.manager.SystemUtils
 import exchange.dydx.abacus.state.model.TradingStateMachine
 import exchange.dydx.abacus.utils.AnalyticsUtils
 import exchange.dydx.abacus.utils.CoroutineTimer
 import exchange.dydx.abacus.utils.JsonEncoder
 import exchange.dydx.abacus.utils.Logger
+import exchange.dydx.abacus.utils.ServerTime
 import exchange.dydx.abacus.utils.iMapOf
 import exchange.dydx.abacus.utils.safeSet
 import kotlinx.datetime.Clock
@@ -169,16 +171,7 @@ internal class ConnectionsSupervisor(
     }
 
     private fun bestEffortConnectIndexer() {
-        findOptimalIndexer { config ->
-            this.indexerConfig = config
-        }
-    }
-
-    private fun findOptimalIndexer(callback: (config: IndexerURIs?) -> Unit) {
-        val first = helper.configs.indexerConfigs?.firstOrNull()
-        helper.ioImplementations.threading?.async(ThreadingType.abacus) {
-            callback(first)
-        }
+        indexerConfig = helper.configs.indexerConfigs?.firstOrNull()
     }
 
     private fun bestEffortConnectChain() {
@@ -251,6 +244,9 @@ internal class ConnectionsSupervisor(
         params.safeSet("CHAINTOKEN_DENOM", chainTokenDenom)
         params.safeSet("CHAINTOKEN_DECIMALS", chainTokenDecimals)
         params.safeSet("txnMemo", "dYdX Frontend (${SystemUtils.platform.rawValue})")
+
+        params.safeSet("enableTimestampNonce", StatsigConfig.ff_enable_timestamp_nonce)
+
         val jsonString = JsonEncoder().encode(params) ?: return
 
         helper.ioImplementations.threading?.async(ThreadingType.main) {
@@ -262,13 +258,34 @@ internal class ConnectionsSupervisor(
                         val json = helper.parser.decodeJsonObject(response)
                         helper.ioImplementations.threading?.async(ThreadingType.main) {
                             if (json != null) {
-                                callback(json["error"] == null)
+                                val error = json["error"]
+                                if (error != null) {
+                                    tracking(
+                                        eventName = "ConnectNetworkFailed",
+                                        params = iMapOf(
+                                            "errorMessage" to helper.parser.asString(error),
+                                        ),
+                                    )
+                                }
+                                callback(error == null)
                             } else {
+                                tracking(
+                                    eventName = "ConnectNetworkFailed",
+                                    params = iMapOf(
+                                        "errorMessage" to "Invalid response: $response",
+                                    ),
+                                )
                                 callback(false)
                             }
                         }
                     } else {
                         helper.ioImplementations.threading?.async(ThreadingType.main) {
+                            tracking(
+                                eventName = "ConnectNetworkFailed",
+                                params = iMapOf(
+                                    "errorMessage" to "null response",
+                                ),
+                            )
                             callback(false)
                         }
                     }
@@ -382,10 +399,10 @@ internal class ConnectionsSupervisor(
         val latestBlockAndTime =
             connectionStats.validatorState.blockAndTime ?: connectionStats.indexerState.blockAndTime
                 ?: return null
-        val currentTime = Clock.System.now()
-        val lapsedTime = currentTime - latestBlockAndTime.time
+        val currentTime = ServerTime.now()
+        val lapsedTime = currentTime - latestBlockAndTime.localTime
         return if (lapsedTime.inWholeMilliseconds <= 0L) {
-            // This should never happen unless the clock is wrong, then we don't want to estimate height
+            // This should never happen we use system time, then we don't want to estimate height
             null
         } else {
             val firstBlockAndTime = connectionStats.firstBlockAndTime

@@ -41,9 +41,9 @@ data class DepositInputOptions(
                 val needsAddress = parser.asBool(data["needsAddress"])
                 val needsFastSpeed = parser.asBool(data["needsFastSpeed"])
 
-                val chains: IList<SelectionOption>? = internalState?.chains?.toIList() ?: iListOf()
+                val chains: IList<SelectionOption> = internalState?.chains?.toIList() ?: iListOf()
 
-                val assets: IList<SelectionOption>? = internalState?.tokens?.toIList() ?: iListOf()
+                val assets: IList<SelectionOption> = internalState?.tokens?.toIList() ?: iListOf()
 
                 var exchanges: IMutableList<SelectionOption>? = null
                 exchangeList?.let { data ->
@@ -63,12 +63,12 @@ data class DepositInputOptions(
                     existing?.assets != assets
                 ) {
                     DepositInputOptions(
-                        needsSize,
-                        needsAddress,
-                        needsFastSpeed,
-                        exchanges,
-                        chains,
-                        assets,
+                        needsSize = needsSize,
+                        needsAddress = needsAddress,
+                        needsFastSpeed = needsFastSpeed,
+                        exchanges = exchanges,
+                        chains = chains,
+                        assets = assets,
                     )
                 } else {
                     existing
@@ -104,9 +104,9 @@ data class WithdrawalInputOptions(
                 val needsAddress = parser.asBool(data["needsAddress"])
                 val needsFastSpeed = parser.asBool(data["needsFastSpeed"])
 
-                val chains: IList<SelectionOption>? = internalState?.chains?.toIList() ?: iListOf()
+                val chains: IList<SelectionOption> = internalState?.chains?.toIList() ?: iListOf()
 
-                val assets: IList<SelectionOption>? = internalState?.tokens?.toIList() ?: iListOf()
+                val assets: IList<SelectionOption> = internalState?.tokens?.toIList() ?: iListOf()
 
                 var exchanges: IMutableList<SelectionOption>? = null
                 exchangeList?.let { data ->
@@ -126,12 +126,12 @@ data class WithdrawalInputOptions(
                     existing?.assets != assets
                 ) {
                     WithdrawalInputOptions(
-                        needsSize,
-                        needsAddress,
-                        needsFastSpeed,
-                        exchanges,
-                        chains,
-                        assets,
+                        needsSize = needsSize,
+                        needsAddress = needsAddress,
+                        needsFastSpeed = needsFastSpeed,
+                        exchanges = exchanges,
+                        chains = chains,
+                        assets = assets,
                     )
                 } else {
                     existing
@@ -166,10 +166,10 @@ data class TransferOutInputOptions(
             val chainName = environment?.chainName
             val chainOption: SelectionOption = if (chainName != null) {
                 SelectionOption(
-                    "chain",
-                    chainName,
-                    null,
-                    environment.chainLogo,
+                    type = "chain",
+                    string = chainName,
+                    stringKey = null,
+                    iconUrl = environment.chainLogo,
                 )
             } else {
                 return null
@@ -179,10 +179,10 @@ data class TransferOutInputOptions(
             val assets: IList<SelectionOption> = environment.tokens.keys.map { key ->
                 val token = environment.tokens[key]!!
                 SelectionOption(
-                    key,
-                    token.name,
-                    null,
-                    token.imageUrl,
+                    type = key,
+                    string = token.name,
+                    stringKey = null,
+                    iconUrl = token.imageUrl,
                 )
             }.toIList()
 
@@ -192,10 +192,10 @@ data class TransferOutInputOptions(
                 existing.assets != assets
             ) {
                 TransferOutInputOptions(
-                    needsSize,
-                    needsAddress,
-                    chains,
-                    assets,
+                    needsSize = needsSize,
+                    needsAddress = needsAddress,
+                    chains = chains,
+                    assets = assets,
                 )
             } else {
                 existing
@@ -264,6 +264,7 @@ data class TransferInputRequestPayload(
     val routeType: String?,
     val targetAddress: String?,
     val data: String?,
+    val allMessages: String?,
     val value: String?,
     val gasLimit: String?,
     val gasPrice: String?,
@@ -288,6 +289,7 @@ data class TransferInputRequestPayload(
                 val routeType = parser.asString(data["routeType"])
                 val targetAddress = parser.asString(data["targetAddress"])
                 val dataValue = parser.asString(data["data"])
+                val allMessages = parser.asString(data["allMessages"])
                 val value = parser.asString(data["value"])
                 val gasLimit = parser.asString(data["gasLimit"])
                 val gasPrice = parser.asString(data["gasPrice"])
@@ -304,6 +306,7 @@ data class TransferInputRequestPayload(
                     existing?.routeType != routeType ||
                     existing?.targetAddress != targetAddress ||
                     existing?.data != dataValue ||
+                    existing?.allMessages != allMessages ||
                     existing?.value != value ||
                     existing?.gasLimit != gasLimit ||
                     existing?.gasPrice != gasPrice ||
@@ -320,6 +323,7 @@ data class TransferInputRequestPayload(
                         routeType,
                         targetAddress,
                         dataValue,
+                        allMessages,
                         value,
                         gasLimit,
                         gasPrice,
@@ -350,12 +354,13 @@ data class TransferInputSummary(
     val filled: Boolean,
     val slippage: Double?,
     val exchangeRate: Double?,
-    val estimatedRouteDuration: Double?,
+    val estimatedRouteDurationSeconds: Double?,
     val bridgeFee: Double?,
     val gasFee: Double?,
     val toAmount: Double?,
     val toAmountMin: Double?,
     val toAmountUSDC: Double?,
+    val toAmountUSD: Double?,
     val aggregatePriceImpact: Double?,
 ) {
     companion object {
@@ -372,12 +377,13 @@ data class TransferInputSummary(
                 val filled = parser.asBool(data["filled"]) ?: false
                 val slippage = parser.asDouble(data["slippage"])
                 val exchangeRate = parser.asDouble(data["exchangeRate"])
-                val estimatedRouteDuration = parser.asDouble(data["estimatedRouteDuration"])
+                val estimatedRouteDurationSeconds = parser.asDouble(data["estimatedRouteDurationSeconds"])
                 val bridgeFee = parser.asDouble(data["bridgeFee"])
                 val gasFee = parser.asDouble(data["gasFee"])
                 val toAmount = parser.asDouble(data["toAmount"])
                 val toAmountMin = parser.asDouble(data["toAmountMin"])
                 val toAmountUSDC = parser.asDouble(data["toAmountUSDC"])
+                val toAmountUSD = parser.asDouble(data["toAmountUSD"])
                 val aggregatePriceImpact = parser.asDouble(data["aggregatePriceImpact"])
 
                 return if (existing?.usdcSize != usdcSize ||
@@ -385,12 +391,13 @@ data class TransferInputSummary(
                     existing?.filled != filled ||
                     existing.slippage != slippage ||
                     existing.exchangeRate != exchangeRate ||
-                    existing.estimatedRouteDuration != estimatedRouteDuration ||
+                    existing.estimatedRouteDurationSeconds != estimatedRouteDurationSeconds ||
                     existing.bridgeFee != bridgeFee ||
                     existing.gasFee != gasFee ||
                     existing.toAmount != toAmount ||
                     existing.toAmountMin != toAmountMin ||
                     existing.toAmountUSDC != toAmountUSDC ||
+                    existing.toAmountUSD != toAmountUSD ||
                     existing.aggregatePriceImpact != aggregatePriceImpact
                 ) {
                     TransferInputSummary(
@@ -399,12 +406,13 @@ data class TransferInputSummary(
                         filled,
                         slippage,
                         exchangeRate,
-                        estimatedRouteDuration,
+                        estimatedRouteDurationSeconds,
                         bridgeFee,
                         gasFee,
                         toAmount,
                         toAmountMin,
                         toAmountUSDC,
+                        toAmountUSD,
                         aggregatePriceImpact,
                     )
                 } else {
@@ -458,8 +466,8 @@ enum class TransferType(val rawValue: String) {
     transferOut("TRANSFER_OUT");
 
     companion object {
-        operator fun invoke(rawValue: String) =
-            TransferType.values().firstOrNull { it.rawValue == rawValue }
+        operator fun invoke(rawValue: String?) =
+            entries.firstOrNull { it.rawValue == rawValue }
     }
 }
 
@@ -483,6 +491,7 @@ data class TransferInput(
     val requestPayload: TransferInputRequestPayload?,
     val errors: String?,
     val errorMessage: String?,
+    val warning: String?,
 ) {
     val isCctp: Boolean
         get() = cctpChainIds?.any { it.isCctpEnabled(this) } ?: false
@@ -493,71 +502,103 @@ data class TransferInput(
             parser: ParserProtocol,
             data: Map<*, *>?,
             environment: V4Environment?,
-            internalState: InternalTransferInputState?
+            internalState: InternalTransferInputState?,
+            staticTyping: Boolean,
         ): TransferInput? {
             Logger.d { "creating Transfer Input\n" }
 
-            data?.let {
-                val type = parser.asString(data["type"])?.let {
-                    TransferType.invoke(it)
+            if (internalState != null || data != null) {
+                val type = if (staticTyping) {
+                    internalState?.type
+                } else {
+                    parser.asString(data?.get("type"))?.let {
+                        TransferType.invoke(it)
+                    }
                 }
 
-                val size =
-                    TransferInputSize.create(existing?.size, parser, parser.asMap(data["size"]))
-                val fastSpeed = parser.asBool(data["fastSpeed"]) ?: false
-                val fee = parser.asDouble(data["fee"])
-                val exchange = parser.asString(data["exchange"])
-                val chain = parser.asString(data["chain"])
-                val token = parser.asString(data["token"])
-                val address = parser.asString(data["address"])
-                val memo = parser.asString(data["memo"])
+                val size = if (staticTyping) {
+                    internalState?.size
+                } else {
+                    TransferInputSize.create(existing?.size, parser, parser.asMap(data?.get("size")))
+                }
+                val fastSpeed = if (staticTyping) internalState?.fastSpeed ?: false else parser.asBool(data?.get("fastSpeed")) ?: false
+                val fee = if (staticTyping) internalState?.fee else parser.asDouble(data?.get("fee"))
+                val exchange = if (staticTyping) internalState?.exchange else parser.asString(data?.get("exchange"))
+                val chain = if (staticTyping) internalState?.chain else parser.asString(data?.get("chain"))
+                val token = if (staticTyping) internalState?.token else parser.asString(data?.get("token"))
+                val address = if (staticTyping) internalState?.address else parser.asString(data?.get("address"))
+                val memo = if (staticTyping) internalState?.memo else parser.asString(data?.get("memo"))
 
                 var depositOptions: DepositInputOptions? = null
                 if (type == TransferType.deposit) {
-                    depositOptions = DepositInputOptions.create(
-                        existing?.depositOptions,
-                        parser,
-                        parser.asMap(data["depositOptions"]),
-                        internalState,
-                    )
+                    depositOptions = if (staticTyping) {
+                        internalState?.depositOptions
+                    } else {
+                        DepositInputOptions.create(
+                            existing = existing?.depositOptions,
+                            parser = parser,
+                            data = parser.asMap(data?.get("depositOptions")),
+                            internalState = internalState,
+                        )
+                    }
                 }
 
                 var withdrawalOptions: WithdrawalInputOptions? = null
                 if (type == TransferType.withdrawal) {
-                    withdrawalOptions = WithdrawalInputOptions.create(
-                        existing?.withdrawalOptions,
-                        parser,
-                        parser.asMap(data["withdrawalOptions"]),
-                        internalState,
-                    )
+                    withdrawalOptions = if (staticTyping) {
+                        internalState?.withdrawalOptions
+                    } else {
+                        WithdrawalInputOptions.create(
+                            existing = existing?.withdrawalOptions,
+                            parser = parser,
+                            data = parser.asMap(data?.get("withdrawalOptions")),
+                            internalState = internalState,
+                        )
+                    }
                 }
 
                 var transferOutOptions: TransferOutInputOptions? = null
                 if (type == TransferType.transferOut) {
-                    transferOutOptions = TransferOutInputOptions.create(
-                        existing?.transferOutOptions,
-                        parser,
-                        parser.asMap(data["transferOutOptions"]),
-                        environment,
+                    transferOutOptions = if (staticTyping) {
+                        internalState?.transferOutOptions
+                    } else {
+                        TransferOutInputOptions.create(
+                            existing = existing?.transferOutOptions,
+                            parser = parser,
+                            data = parser.asMap(data?.get("transferOutOptions")),
+                            environment = environment,
+                        )
+                    }
+                }
+
+                val summary = if (staticTyping) {
+                    internalState?.summary
+                } else {
+                    TransferInputSummary.create(
+                        existing = existing?.summary,
+                        parser = parser,
+                        data = parser.asMap(data?.get("summary")),
                     )
                 }
 
-                val summary = TransferInputSummary.create(
-                    existing?.summary,
-                    parser,
-                    parser.asMap(data["summary"]),
-                )
+                val resources = if (staticTyping) {
+                    internalState?.resources
+                } else {
+                    TransferInputResources.create(
+                        existing = existing?.resources,
+                        internalState = internalState,
+                    )
+                }
 
-                val resources = TransferInputResources.create(
-                    existing?.resources,
-                    internalState,
-                )
-
-                val route = parser.asMap(data["route"])
+                val route = if (staticTyping) {
+                    internalState?.route
+                } else {
+                    parser.asMap(data?.get("route"))
+                }
                 val requestPayload = TransferInputRequestPayload.create(
-                    null,
-                    parser,
-                    parser.asMap(route?.get("requestPayload")),
+                    existing = null,
+                    parser = parser,
+                    data = parser.asMap(route?.get("requestPayload")),
                 )
 
                 val errors = parser.asString(route?.get("errors"))
@@ -570,6 +611,7 @@ data class TransferInput(
                     } else {
                         null
                     }
+                val warning = parser.asString(route?.get("warning"))
 
                 return if (existing?.type !== type ||
                     existing?.size !== size ||
@@ -587,26 +629,28 @@ data class TransferInput(
                     existing.resources !== resources ||
                     existing.requestPayload !== requestPayload ||
                     existing.errors != errors ||
-                    existing.errorMessage != errorMessage
+                    existing.errorMessage != errorMessage ||
+                    existing.warning != warning
                 ) {
                     TransferInput(
-                        type,
-                        size,
-                        fastSpeed,
-                        fee,
-                        exchange,
-                        chain,
-                        token,
-                        address,
-                        memo,
-                        depositOptions,
-                        withdrawalOptions,
-                        transferOutOptions,
-                        summary,
-                        resources,
-                        requestPayload,
-                        errors,
-                        errorMessage,
+                        type = type,
+                        size = size,
+                        fastSpeed = fastSpeed,
+                        fee = fee,
+                        exchange = exchange,
+                        chain = chain,
+                        token = token,
+                        address = address,
+                        memo = memo,
+                        depositOptions = depositOptions,
+                        withdrawalOptions = withdrawalOptions,
+                        transferOutOptions = transferOutOptions,
+                        summary = summary,
+                        resources = resources,
+                        requestPayload = requestPayload,
+                        errors = errors,
+                        errorMessage = errorMessage,
+                        warning = warning,
                     )
                 } else {
                     existing

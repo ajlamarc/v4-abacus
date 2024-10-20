@@ -35,3 +35,14 @@ style:
     active: false
   MaxLineLength:
     active: false
+  UnusedParameter:
+    active: false
+  ForbiddenComment:
+    active: false
+  MagicNumber:
+    active: false
+
+empty-blocks:
+  EmptyDefaultConstructor:
+    active: false
+
