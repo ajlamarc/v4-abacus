@@ -57,7 +57,7 @@ fun TradingStateMachine.loadMarketsConfigurations(mock: AbacusMockData, deployme
     return rest(
         AbUrl(
             host = "dydx-v4-shared-resources.vercel.app",
-            path = "/configs/markets.json",
+            path = "/apps/dydx-v4/configs/markets.json",
             scheme = "https://",
         ),
         mock.marketsConfigurations.configurations,
@@ -608,7 +608,7 @@ fun TradingStateMachine.rest(
             changes = onVaultMarketPnls(payload)
         }
 
-        "/configs/markets.json" -> {
+        "/apps/dydx-v4/configs/markets.json" -> {
             if (deploymentUri != null) {
                 changes = configurations(
                     payload = payload,

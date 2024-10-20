@@ -140,7 +140,7 @@ internal class OnboardingSupervisor(
     }
 
     private suspend fun updateChainRpcEndpoints() {
-        val url = "${helper.deploymentUri}/configs/rpc.json"
+        val url = "${helper.deploymentUri}/apps/dydx-v4/configs/rpc.json"
         helper.getAsync(url).response?.let { response ->
             RpcConfigsProcessor(helper.parser, configs.alchemyApiKey).received(response).let { rpcMap ->
                 RpcConfigs.chainRpcMap = rpcMap
@@ -169,7 +169,7 @@ internal class OnboardingSupervisor(
     }
 
     private fun retrieveCctpChainIds() {
-        val url = "${helper.deploymentUri}/configs/cctp.json"
+        val url = "${helper.deploymentUri}/apps/dydx-v4/configs/cctp.json"
         helper.get(url) { _, response, _, _ ->
             if (response != null) {
                 val chainIds = mutableListOf<CctpChainTokenInfo>()
@@ -189,7 +189,7 @@ internal class OnboardingSupervisor(
     }
 
     private fun retrieveDepositExchanges() {
-        val url = "${helper.deploymentUri}/configs/exchanges.json"
+        val url = "${helper.deploymentUri}/apps/dydx-v4/configs/exchanges.json"
         helper.get(url) { _, response, _, _ ->
             if (response != null) {
                 val exchanges = mutableListOf<ExchangeInfo>()
